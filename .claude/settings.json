@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "star-battle-solver-local": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  }
+}

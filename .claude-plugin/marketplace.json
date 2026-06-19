@@ -1,0 +1,14 @@
+{
+  "name": "star-battle-solver-local",
+  "description": "Local marketplace for dogfooding the star-battle-solver plugin in this repo",
+  "owner": {
+    "name": "Hakurouken"
+  },
+  "plugins": [
+    {
+      "name": "star-battle-solver",
+      "source": "./",
+      "description": "Decode Star Battle puzzle images, render them in the terminal, and solve with step-by-step reasoning"
+    }
+  ]
+}
