@@ -1,0 +1,26 @@
+{
+  "name": "star-battle-solver",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsx --test tests/solve-k.tests.ts tests/solve-2.*.tests.ts tests/solve.tests.ts",
+    "typecheck": "tsc --noEmit",
+    "sync-solver": "tsx scripts/sync-solver.ts",
+    "check-solver": "tsx scripts/sync-solver.ts --check",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "sharp": "^0.35.1"
+  }
+}
