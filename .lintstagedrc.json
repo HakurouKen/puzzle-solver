@@ -1,7 +1,0 @@
-{
-  "src/{solve,solve-2,solve-k}.ts": [
-    "pnpm sync-solver",
-    "git add skills/solving-star-battle/references/solver/"
-  ],
-  "*": "pnpm check-solver"
-}

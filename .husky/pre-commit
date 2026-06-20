@@ -1,20 +1,20 @@
 #!/usr/bin/env sh
-# pre-commit hook: 跑 lint-staged。pnpm 路径解析按优先级：
+# pre-commit: 跑 type-check。pnpm 路径解析按优先级：
 # 1) PATH 中直接可用（普通终端）
 # 2) corepack（Node 16+ 自带，CI / 现代开发机）
 # 3) ~/Library/pnpm/.tools/pnpm/*/bin/pnpm 兜底（macOS GUI 启动的 shell，PATH 不全）
 
 if command -v pnpm >/dev/null 2>&1; then
-  exec pnpm exec lint-staged
+  exec pnpm type-check
 fi
 
 if command -v corepack >/dev/null 2>&1; then
-  exec corepack pnpm exec lint-staged
+  exec corepack pnpm type-check
 fi
 
 PNPM_FALLBACK=$(ls -d "$HOME"/Library/pnpm/.tools/pnpm/*/bin/pnpm 2>/dev/null | sort -V | tail -1)
 if [ -x "$PNPM_FALLBACK" ]; then
-  exec "$PNPM_FALLBACK" exec lint-staged
+  exec "$PNPM_FALLBACK" type-check
 fi
 
 echo "pre-commit: 找不到 pnpm。请确认 pnpm 已装并在 PATH 中。" >&2
