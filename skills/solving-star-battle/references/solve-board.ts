@@ -79,7 +79,14 @@ console.log('===== 解 =====');
 const tmpFile = resolve(tmpdir(), `sb-solution-${process.pid}.json`);
 writeFileSync(tmpFile, JSON.stringify({ regions, k, solution: result.solution }));
 
-// 同目录 render-board.ts:重写 argv 后 dynamic import,共享同一 tsx loader。
-const renderScript = join(here, 'render-board.ts');
+// 邻居 skill decoding-star-battle 的 render-board.ts:重写 argv 后 dynamic import,
+// 共享同一 tsx loader。render-board 跨 skill 复用,因为同一份渲染逻辑既用于
+// decoding 末尾的"识别确认"也用于 solving 末尾的"展示解"。
+const renderScript = resolve(here, '..', '..', 'decoding-star-battle', 'references', 'render-board.ts');
+if (!existsSync(renderScript)) {
+  console.error(`错误: 找不到 render-board: ${renderScript}`);
+  console.error('skill 应自带邻居 decoding-star-battle/references/render-board.ts。');
+  process.exit(1);
+}
 process.argv = [process.argv[0], renderScript, tmpFile];
 await import(renderScript);

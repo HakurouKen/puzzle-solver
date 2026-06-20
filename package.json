@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "tsx --test tests/solve-k.tests.ts tests/solve-2.*.tests.ts tests/solve.tests.ts skills/star-battle-solver/references/__tests__/*.tests.ts",
+    "test": "tsx --test tests/solve-k.tests.ts tests/solve-2.*.tests.ts tests/solve.tests.ts skills/decoding-star-battle/references/__tests__/*.tests.ts",
     "typecheck": "tsc --noEmit",
     "sync-solver": "tsx scripts/sync-solver.ts",
     "check-solver": "tsx scripts/sync-solver.ts --check",

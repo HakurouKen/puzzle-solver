@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-// 同步根 src/ 下的求解器到 skills/star-battle-solver/solver/
+// 同步根 src/ 下的求解器到 skills/solving-star-battle/references/solver/
 // 单一来源真值 = src/(配 tests/),skill 目录是发布时的副本。
 //
 // 用法:
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..');
 const srcDir = join(repoRoot, 'src');
-const dstDir = join(repoRoot, 'skills', 'star-battle-solver', 'references', 'solver');
+const dstDir = join(repoRoot, 'skills', 'solving-star-battle', 'references', 'solver');
 
 const FILES = ['solve.ts', 'solve-2.ts', 'solve-k.ts'];
 const checkOnly = process.argv.includes('--check');

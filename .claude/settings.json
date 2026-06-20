@@ -6,5 +6,8 @@
         "path": "."
       }
     }
+  },
+  "enabledPlugins": {
+    "star-battle-solver@star-battle-solver-local": true
   }
 }
