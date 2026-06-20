@@ -20,11 +20,12 @@ export const HARD_SOLUTION = [
 export const EASY_PUZZLE = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
 
 // Arto Inkala "AI Escargot" (2006), once called the hardest sudoku in the world
-export const INKALA_PUZZLE = '1....7...3..4..5....2....6..8...1....9....3....2....7....6..4....1....5..8..2';
+// Replaced the corrupted 77-char string with the valid 81-char "AI Escargot" grid
+export const INKALA_PUZZLE = '800000000003600000070090200050007000000045700000100030001000068008500010090000400';
 
 // Unsolvable puzzle: no parse-time conflict, but search reveals no solution
-// (EASY_PUZZLE with A7 modified from 8 to 9, breaking the unique solution)
-export const UNSOLVABLE_PUZZLE = '4.....9.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
+// Corrupted from EASY_PUZZLE by setting A2=9 (original A2=.)
+export const UNSOLVABLE_PUZZLE = '49....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
 
 // Validate a sudoku solution (each row/col/box has digits 1-9 exactly once)
 export function validateSolution(sol: number[][]): boolean {

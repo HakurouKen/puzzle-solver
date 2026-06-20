@@ -146,3 +146,71 @@ export function eliminate(grid: Grid, s: Cell, d: Digit, steps: Step[]): Grid | 
   return grid;
 }
 
+// ─── search / solve ───────────────────────────────────────
+
+// 把 Grid 转换为 9×9 数字矩阵（每格候选应已收敛到单值）
+function gridToMatrix(grid: Grid): number[][] {
+  return ROWS.map(r => COLS.map(c => Number(grid.get(r + c))));
+}
+
+// 把 Grid 序列化为可深拷贝的形式（用对象）
+function gridToObject(grid: Grid): Record<string, string> {
+  const obj: Record<string, string> = {};
+  for (const [k, v] of grid) obj[k] = v;
+  return obj;
+}
+
+function objectToGrid(obj: Record<string, string>): Grid {
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, obj[s]);
+  return g;
+}
+
+// 回溯搜索：从候选数最少（>1）的格子分支
+export function search(grid: Grid, steps: Step[]): Grid | false {
+  // 检查所有格子是否都已确定（候选长度 1）
+  let unsolved: Cell | null = null;
+  let minCount = 10;
+  for (const s of squares) {
+    const len = grid.get(s)!.length;
+    if (len > 1 && len < minCount) {
+      minCount = len;
+      unsolved = s;
+    }
+  }
+  if (unsolved === null) {
+    // 全部确定
+    return grid;
+  }
+  // 分支：在 unsolved 候选中逐值尝试
+  const snapshot = gridToObject(grid);
+  for (const d of grid.get(unsolved)!) {
+    steps.push({
+      type: 'search',
+      cell: unsolved,
+      digit: d,
+      detail: `try ${unsolved} = ${d}`,
+    });
+    const copy = objectToGrid(snapshot);
+    const assigned = assign(copy, unsolved, d, steps);
+    if (assigned !== false) {
+      const result = search(assigned, steps);
+      if (result !== false) return result;
+    }
+  }
+  return false;
+}
+
+// 入口：解析 + 约束传播 + 搜索。返回 { solution, steps } 或 null。
+export function solve(input: string): SolveResult | null {
+  const grid = parseGrid(input);
+  if (grid === false) return null;
+  const steps: Step[] = [];
+  const result = search(grid, steps);
+  if (result === false) return null;
+  return {
+    solution: gridToMatrix(result),
+    steps,
+  };
+}
+
