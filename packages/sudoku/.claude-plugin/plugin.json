@@ -1,0 +1,16 @@
+{
+  "name": "sudoku-solver",
+  "description": "Decode Sudoku puzzle images, render them in the terminal, and solve with step-by-step reasoning",
+  "version": "0.1.0",
+  "author": {
+    "name": "Hakurouken"
+  },
+  "license": "MIT",
+  "keywords": [
+    "sudoku",
+    "puzzle",
+    "solver",
+    "image-recognition",
+    "terminal-visualization"
+  ]
+}

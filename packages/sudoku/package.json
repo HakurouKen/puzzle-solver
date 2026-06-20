@@ -1,0 +1,14 @@
+{
+  "name": "@puzzle-solver/sudoku",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test skills/solving-sudoku/references/__tests__/*.tests.ts skills/rendering-sudoku/references/__tests__/*.tests.ts",
+    "type-check": "tsc --noEmit -p ../../tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3"
+  }
+}

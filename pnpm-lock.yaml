@@ -25,6 +25,15 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/sudoku:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.0.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
 packages:
 
   '@emnapi/runtime@1.11.1':
