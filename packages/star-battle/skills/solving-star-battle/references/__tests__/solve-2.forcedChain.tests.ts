@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cellKey, forcedChain } from '../src/solve-2.ts';
-import type { BoardState } from '../src/solve-2.ts';
+import { cellKey, forcedChain } from '../solver/solve-2.ts';
+import type { BoardState } from '../solver/solve-2.ts';
 import { ctxFromRegions, excludeAllExcept } from './solve-2.test-utils.ts';
 
 test('forcedChain:某区域的候选会使他区无解 → 排除该候选(定 X 或唯一定星)', () => {

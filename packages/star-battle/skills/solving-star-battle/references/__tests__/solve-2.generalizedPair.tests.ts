@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cellKey, generalizedPair } from '../src/solve-2.ts';
-import type { BoardState } from '../src/solve-2.ts';
+import { cellKey, generalizedPair } from '../solver/solve-2.ts';
+import type { BoardState } from '../solver/solve-2.ts';
 import { ctxFromRegions, excludeAllExcept } from './solve-2.test-utils.ts';
 
 test('generalizedPair:2 区域恰占 2 行 → 两行他区格划 X', () => {

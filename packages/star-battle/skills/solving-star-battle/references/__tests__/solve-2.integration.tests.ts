@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import solve from '../src/solve-2.ts';
+import solve from '../solver/solve-2.ts';
 import { rowsBoard, colsBoard, validateSolution } from './solve-2.test-utils.ts';
 
 test('回归:10x10 regions=rows 盘求出合法解', () => {

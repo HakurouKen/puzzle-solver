@@ -4,8 +4,8 @@ import solve, {
   cellKey, getCounts, validateCounts, deriveCandidates,
   uniqueRegion, uniqueRow, saturationClear, rowColRegionLock, generalizedPair,
   GENERIC_STRATEGIES,
-} from '../src/solve-k.ts';
-import type { BoardState, SolveContext } from '../src/solve-k.ts';
+} from '../solver/solve-k.ts';
+import type { BoardState, SolveContext } from '../solver/solve-k.ts';
 
 type Cell = [number, number];
 

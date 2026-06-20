@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import solve, { STRATEGIES } from '../src/solve-2.ts';
+import solve, { STRATEGIES } from '../solver/solve-2.ts';
 import { rowsBoard } from './solve-2.test-utils.ts';
 
 test('solve:接口仍为 { solution, steps } 且 steps 非空', () => {

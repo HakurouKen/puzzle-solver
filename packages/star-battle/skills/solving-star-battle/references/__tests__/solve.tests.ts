@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import solve from '../src/solve.ts';
+import solve from '../solver/solve.ts';
 
 type Cell = [number, number];
 

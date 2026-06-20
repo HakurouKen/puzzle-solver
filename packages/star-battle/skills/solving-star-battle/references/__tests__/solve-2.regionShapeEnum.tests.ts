@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cellKey, regionShapeEnum } from '../src/solve-2.ts';
-import type { BoardState } from '../src/solve-2.ts';
+import { cellKey, regionShapeEnum } from '../solver/solve-2.ts';
+import type { BoardState } from '../solver/solve-2.ts';
 import { ctxFromRegions } from './solve-2.test-utils.ts';
 
 test('例1:1x3 直线区域,2 星必在两端 → 交集定星', () => {

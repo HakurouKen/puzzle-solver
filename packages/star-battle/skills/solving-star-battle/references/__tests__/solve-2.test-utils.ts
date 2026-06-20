@@ -1,5 +1,5 @@
-import { cellKey } from '../src/solve-2.ts';
-import type { SolveContext } from '../src/solve-2.ts';
+import { cellKey } from '../solver/solve-2.ts';
+import type { SolveContext } from '../solver/solve-2.ts';
 
 export type Cell = [number, number];
 

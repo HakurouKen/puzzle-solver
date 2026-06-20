@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cellKey, uniqueRegion } from '../src/solve-2.ts';
-import type { BoardState } from '../src/solve-2.ts';
+import { cellKey, uniqueRegion } from '../solver/solve-2.ts';
+import type { BoardState } from '../solver/solve-2.ts';
 import { ctxFromRegions } from './solve-2.test-utils.ts';
 
 test('uniqueRegion(k=2):区域已放 1 颗 + 仅剩 1 候选 → 定星', () => {
