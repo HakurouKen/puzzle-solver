@@ -85,9 +85,49 @@ export function parseGrid(input: string): Grid | false {
   return grid;
 }
 
-// 临时 stub，Task 5 完整实现（仅设置格子值，不检测冲突）
-function assign(grid: Grid, s: Cell, d: Digit, _steps: Step[]): Grid | false {
-  grid.set(s, d);
+// 把格子 s 确定为数字 d：从 s 候选中删除所有 ≠ d 的值；从 s 的同伴中删除 d。
+// 任一操作使候选变空则返回 false。
+export function assign(grid: Grid, s: Cell, d: Digit, steps: Step[]): Grid | false {
+  const candidates = grid.get(s)!;
+  // 如果 s 已经是 d，重复 assign：直接成功，不记录步骤
+  if (candidates === d) return grid;
+  // d 不在候选中 → 冲突（之前已被同伴消除）
+  if (!candidates.includes(d)) return false;
+  // 从 s 候选中删除所有 ≠ d 的值
+  const otherValues = candidates.replace(d, '');
+  for (const d2 of otherValues) {
+    const ok = eliminate(grid, s, d2, steps);
+    if (ok === false) return false;
+  }
+  // 此时 grid.get(s) === d
+  steps.push({ type: 'assign', cell: s, digit: d, detail: `${s} = ${d}` });
+  return grid;
+}
+
+// 从 s 的候选中删除数字 d；若 s 只剩一个候选，从所有同伴中消除该值。
+// Task 6 扩展为完整约束传播。
+export function eliminate(grid: Grid, s: Cell, d: Digit, steps: Step[]): Grid | false {
+  const candidates = grid.get(s)!;
+  if (!candidates.includes(d)) return grid;
+
+  const newCandidates = candidates.replace(d, '');
+  grid.set(s, newCandidates);
+
+  // 候选变空 → 冲突
+  if (newCandidates.length === 0) return false;
+
+  steps.push({ type: 'eliminate', cell: s, digit: d, detail: `${s} ≠ ${d}` });
+
+  // (1) 如果 s 只剩一个值 d2，从所有同伴中消除 d2
+  if (newCandidates.length === 1) {
+    const d2 = newCandidates;
+    for (const p of peers.get(s)!) {
+      const ok = eliminate(grid, p, d2, steps);
+      if (ok === false) return false;
+    }
+  }
+
+  // NOTE: Task 6 将添加 (2) 约束传播：unit 中仅剩一个位置可放 d
   return grid;
 }
 

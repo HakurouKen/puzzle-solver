@@ -63,8 +63,10 @@ test('parseGrid: 合法题 → 81 格 Map', () => {
   assert.equal(g!.size, 81);
   // 已知数字 A1=4, 候选 = "4"
   assert.equal(g!.get('A1'), '4');
-  // 空格 A2='.', 候选 = 123456789
-  assert.equal(g!.get('A2'), DIGITS);
+  // 空格经约束传播后候选减少
+  assert.ok(!g!.get('A2')!.includes('4'));  // A1=4 同行消除
+  assert.ok(!g!.get('B1')!.includes('4'));  // A1=4 同列消除
+  assert.ok(!g!.get('B2')!.includes('4'));  // A1=4 同宫消除
 });
 
 test('parseGrid: "0" 与 "." 都视为空格', () => {
@@ -94,6 +96,43 @@ test('parseGrid: 含冲突的已知数字 → 拒绝', () => {
   // 但同行两个 5 → 冲突
   const conflict = '55' + '.'.repeat(79);
   assert.equal(parseGrid(conflict), false);
+});
+
+import { assign, eliminate } from '../solver.ts';
+import type { Grid, Step } from '../solver.ts';
+
+test('assign: 把格子收敛到单值 + 同步消除同伴中该值', () => {
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  const steps: Step[] = [];
+  const ok = assign(g, 'A1', '5', steps);
+  assert.ok(ok !== false);
+  assert.equal(g.get('A1'), '5');
+  // 同伴 A2 不再有 5
+  assert.ok(!g.get('A2')!.includes('5'));
+  // steps 含 assign 步骤
+  assert.ok(steps.some(s => s.type === 'assign' && s.cell === 'A1' && s.digit === '5'));
+});
+
+test('assign: 与同伴已知数字冲突 → false', () => {
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  // 先把 A1 设为 5
+  assign(g, 'A1', '5', []);
+  // 再尝试把 A2 设为 5（同行冲突）
+  const ok = assign(g, 'A2', '5', []);
+  assert.equal(ok, false);
+});
+
+test('assign: 候选不变但数字未变 → 不重复记录', () => {
+  // 弱断言：assign 一个已经是该值的格子不应崩溃
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  assign(g, 'A1', '5', []);
+  const steps: Step[] = [];
+  assign(g, 'A1', '5', steps);
+  // 重复 assign 不应产出新步骤（候选已收敛）
+  assert.equal(steps.length, 0);
 });
 
 test('parseGrid: UNSOLVABLE_PUZZLE 无解析期冲突，返回 Grid', () => {
