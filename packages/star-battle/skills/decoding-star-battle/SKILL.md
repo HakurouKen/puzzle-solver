@@ -18,7 +18,7 @@ digraph flow {
     "k 已知?" [shape=diamond];
     "AskUserQuestion 询问 k" [shape=box];
     "写 input.json (含 k)" [shape=box];
-    "调 render-board 显示" [shape=box];
+    "invoke rendering-star-battle 显示" [shape=box];
     "等待用户确认/纠正" [shape=diamond];
     "invoke solving-star-battle" [shape=box];
     "用户消息" -> "有图片?";
@@ -29,7 +29,7 @@ digraph flow {
     "k 已知?" -> "写 input.json (含 k)" [label="是"];
     "k 已知?" -> "AskUserQuestion 询问 k" [label="否"];
     "AskUserQuestion 询问 k" -> "写 input.json (含 k)";
-    "写 input.json (含 k)" -> "调 render-board 显示" -> "等待用户确认/纠正";
+    "写 input.json (含 k)" -> "invoke rendering-star-battle 显示" -> "等待用户确认/纠正";
     "等待用户确认/纠正" -> "invoke solving-star-battle" [label="确认"];
     "等待用户确认/纠正" -> "识图: 推断 n、regions; 看 k 是否标注" [label="纠正"];
 }
@@ -56,6 +56,12 @@ digraph flow {
 如果颜色边界模糊（橙 vs 桃、淡蓝 vs 青），或区域用粗线/图案分割不易直读，先用 `references/extract-cells.ts` 拿到每格的结构化特征，再据此决策 regions：
 
 ```bash
+# dev（在 puzzle-solver monorepo 仓库里）：
+node --import tsx packages/star-battle/skills/decoding-star-battle/references/extract-cells.ts \
+    "$IMG" --rect x,y,w,h --n N \
+    > /tmp/sb-features.json
+
+# 已安装 plugin：
 node --import tsx skills/decoding-star-battle/references/extract-cells.ts \
     "$IMG" --rect x,y,w,h --n N \
     > /tmp/sb-features.json
@@ -85,11 +91,13 @@ JSON
 
 ### 4. 渲染并请求确认
 
+render 不再由本 skill 直接执行——通过 invoke `rendering-star-battle` skill 让它读 `/tmp/sb-input.json` 渲染。
+
 ```bash
-node_modules/.bin/tsx skills/decoding-star-battle/references/render-board.ts /tmp/sb-input.json
+invoke [[rendering-star-battle]] /tmp/sb-input.json
 ```
 
-`render-board` 是**纯黑白 Unicode 盒线**，不使用 ANSI 颜色 — 终端调色板与原图色差会让用户误以为识别错；用粗细线区分区域更可靠。每格中央显示 region id，便于用户**逐格核对**哪些格被分到了哪一区。
+rendering 是**纯黑白 Unicode 盒线**，不使用 ANSI 颜色 — 终端调色板与原图色差会让用户误以为识别错；用粗细线区分区域更可靠。每格中央显示 region id，便于用户**逐格核对**哪些格被分到了哪一区。
 
 打印后**主动询问用户**："识别如上，是否正确？如有错误请指出哪些格子的区域归属错了（例如'行 3 列 4 应归紫色'）。"等待确认/纠正。
 
