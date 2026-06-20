@@ -1,18 +1,19 @@
 #!/usr/bin/env tsx
-// 调用与 skill 同目录的 solver/,打印步骤与最终带星位棋盘。
-//
-// 用法: tsx solve-board.ts <input.json>
-// 输入: { "regions": number[][], "k": number }   (k 必填)
-//
-// 路由(同目录 solver/ 下):
-//   k = 1 → solve.ts (含 hiddenLineGroup 隐藏线对偶)
+// 调用同目录 solver/，按 k 路由：
+//   k = 1 → solve.ts (含 hiddenLineGroup)
 //   k = 2 → solve-2.ts (含 regionShapeEnum / forcedChain)
-//   其他  → solve-k.ts (通用,只用通用策略)
+//   其他  → solve-k.ts (通用)
+//
+// 求解后写 output.json: { regions, k, solution, steps }
+// 不修改 input.json，不调用渲染——展示由 rendering-star-battle skill 负责。
+//
+// 用法: tsx solve-board.ts <input.json> [output.json]
+//   input.json:  { regions: number[][], k: number }   (k 必填)
+//   output.json: 默认 /tmp/sb-output.json
 
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { tmpdir } from 'node:os';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const solverDir = join(here, 'solver');
@@ -20,14 +21,15 @@ const solverDir = join(here, 'solver');
 interface Input { regions: number[][]; k?: number }
 
 const inputPath = process.argv[2];
+const outputPath = process.argv[3] ?? '/tmp/sb-output.json';
+
 if (!inputPath) {
-  console.error('用法: tsx solve-board.ts <input.json>');
+  console.error('用法: tsx solve-board.ts <input.json> [output.json]');
   process.exit(2);
 }
 
 if (!existsSync(join(solverDir, 'solve-k.ts'))) {
   console.error(`错误: 找不到 solver 目录: ${solverDir}`);
-  console.error('skill 应自带 references/solver/;若是从仓库 dev,先运行 pnpm sync-solver。');
   process.exit(1);
 }
 
@@ -68,25 +70,16 @@ console.log('===== 推导步骤 =====');
 for (const s of result.steps) console.log(s);
 
 const hasSolution = result.solution.some(row => row.some(v => v === 1));
-console.log('');
 if (!hasSolution) {
+  console.log('');
   console.log('===== 结果: 无解 =====');
   process.exit(0);
 }
 
-console.log('===== 解 =====');
+writeFileSync(
+  outputPath,
+  JSON.stringify({ regions, k, solution: result.solution, steps: result.steps }, null, 2),
+);
 
-const tmpFile = resolve(tmpdir(), `sb-solution-${process.pid}.json`);
-writeFileSync(tmpFile, JSON.stringify({ regions, k, solution: result.solution }));
-
-// 邻居 skill decoding-star-battle 的 render-board.ts:重写 argv 后 dynamic import,
-// 共享同一 tsx loader。render-board 跨 skill 复用,因为同一份渲染逻辑既用于
-// decoding 末尾的"识别确认"也用于 solving 末尾的"展示解"。
-const renderScript = resolve(here, '..', '..', 'decoding-star-battle', 'references', 'render-board.ts');
-if (!existsSync(renderScript)) {
-  console.error(`错误: 找不到 render-board: ${renderScript}`);
-  console.error('skill 应自带邻居 decoding-star-battle/references/render-board.ts。');
-  process.exit(1);
-}
-process.argv = [process.argv[0], renderScript, tmpFile];
-await import(renderScript);
+console.log('');
+console.log(`已写解到 ${outputPath}，invoke rendering-star-battle 展示。`);
