@@ -1,14 +1,14 @@
 {
-  "name": "star-battle-solver-local",
-  "description": "Local marketplace for dogfooding the star-battle-solver plugin in this repo",
+  "name": "puzzle-solver-local",
+  "description": "Local marketplace for puzzle-solver plugins (star-battle, future: sudoku, ...)",
   "owner": {
     "name": "Hakurouken"
   },
   "plugins": [
     {
       "name": "star-battle-solver",
-      "source": "./",
-      "description": "Decode Star Battle puzzle images, render them in the terminal, and solve with step-by-step reasoning"
+      "source": "../packages/star-battle",
+      "description": "Star Battle: decode puzzle images, render boards, solve with step-by-step reasoning"
     }
   ]
 }
