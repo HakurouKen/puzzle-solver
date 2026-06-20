@@ -140,3 +140,58 @@ test('parseGrid: UNSOLVABLE_PUZZLE 无解析期冲突，返回 Grid', () => {
   assert.ok(g !== false);
   assert.equal(g!.size, 81);
 });
+
+test('eliminate: 删除候选中的一个数字', () => {
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  const steps: Step[] = [];
+  const ok = eliminate(g, 'A1', '5', steps);
+  assert.ok(ok !== false);
+  assert.equal(g.get('A1'), '12346789');
+  // 9 → 8 不算缩到 1，eliminate 不记录步骤（由 assign 链式调用记录）
+  assert.equal(steps.length, 0);
+});
+
+test('eliminate: 候选缩到 1 → 触发 assign 传播', () => {
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  // 一步步消直到 A1 剩 5
+  for (const d of '12346789'.split('')) {
+    eliminate(g, 'A1', d, []);
+  }
+  const steps: Step[] = [];
+  // 现在 A1 = 5，再消除任一不存在的数字：no-op
+  eliminate(g, 'A1', '9', steps);
+  // 验证 A1 还是 5
+  assert.equal(g.get('A1'), '5');
+  // 验证同伴 A2..A9 都没有 5
+  for (const c of COLS.slice(1)) {
+    assert.ok(!g.get('A' + c)!.includes('5'), `A${c} should not have 5`);
+  }
+});
+
+test('eliminate: 候选变空 → false', () => {
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  // 把 A1 确定为 5
+  assign(g, 'A1', '5', []);
+  // 把 B1 也确定为 5 → 触发冲突（B1 与 A1 同行）
+  const ok = assign(g, 'B1', '5', []);
+  assert.equal(ok, false);
+});
+
+test('eliminate: unit 唯一性启发式 — 某 unit 中某数字仅在 1 格出现 → 该格赋此值', () => {
+  // 构造场景：第 1 行 A1..A9 中，手动从 A1 移除 5（不用 assign，避免同伴传播），
+  // 然后逐格从 A9..A3 消去 5。当消去 A3 的 5 后，第 1 行只剩下 A2 有 5，
+  // 此时启发式 2 应触发 assign(A2, '5')
+  const g: Grid = new Map();
+  for (const s of squares) g.set(s, DIGITS);
+  // 手动从 A1 候选中删除 5（非 assign 方式）
+  g.set('A1', g.get('A1')!.replace('5', ''));
+  // 逐格消去第 1 行 5 的候选（A9 → A3）
+  for (const c of ['9', '8', '7', '6', '5', '4', '3']) {
+    eliminate(g, 'A' + c, '5', []);
+  }
+  // 第 1 行中 5 仅在 A2 出现 → 启发式 2 触发 assign(A2, '5')
+  assert.equal(g.get('A2'), '5');
+});

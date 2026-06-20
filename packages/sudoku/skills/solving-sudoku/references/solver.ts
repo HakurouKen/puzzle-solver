@@ -107,27 +107,42 @@ export function assign(grid: Grid, s: Cell, d: Digit, steps: Step[]): Grid | fal
 // 从 s 的候选中删除数字 d；若 s 只剩一个候选，从所有同伴中消除该值。
 // Task 6 扩展为完整约束传播。
 export function eliminate(grid: Grid, s: Cell, d: Digit, steps: Step[]): Grid | false {
-  const candidates = grid.get(s)!;
-  if (!candidates.includes(d)) return grid;
+  // d 已不在候选中：no-op
+  if (!grid.get(s)!.includes(d)) return grid;
 
-  const newCandidates = candidates.replace(d, '');
-  grid.set(s, newCandidates);
+  // 更新候选
+  const newVals = grid.get(s)!.replace(d, '');
+  grid.set(s, newVals);
 
-  // 候选变空 → 冲突
-  if (newCandidates.length === 0) return false;
+  // 启发式 1a：候选变空 → 冲突
+  if (newVals.length === 0) return false;
 
-  steps.push({ type: 'eliminate', cell: s, digit: d, detail: `${s} ≠ ${d}` });
-
-  // (1) 如果 s 只剩一个值 d2，从所有同伴中消除 d2
-  if (newCandidates.length === 1) {
-    const d2 = newCandidates;
+  // 启发式 1b：候选只剩一个值 → 对同伴 eliminate 这个值
+  if (newVals.length === 1) {
+    const d2 = newVals;
     for (const p of peers.get(s)!) {
       const ok = eliminate(grid, p, d2, steps);
       if (ok === false) return false;
     }
   }
 
-  // NOTE: Task 6 将添加 (2) 约束传播：unit 中仅剩一个位置可放 d
+  // 启发式 2：对于 s 所在的每个 unit，检查数字 d 是否只剩一个格子可放
+  for (const u of units.get(s)!) {
+    const dPlaces: Cell[] = [];
+    for (const cell of u) {
+      if (grid.get(cell)!.includes(d)) dPlaces.push(cell);
+    }
+    if (dPlaces.length === 0) {
+      // d 在该 unit 中无处可放 → 冲突
+      return false;
+    }
+    if (dPlaces.length === 1) {
+      // d 在该 unit 中仅出现于 dPlaces[0] → 该格必为 d
+      const ok = assign(grid, dPlaces[0], d, steps);
+      if (ok === false) return false;
+    }
+  }
+
   return grid;
 }
 
