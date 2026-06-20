@@ -1,7 +1,7 @@
 // Shared test fixtures: Sudoku puzzles and expected solutions
 
-// Norvig's classic hard puzzle: 53..7....6..195....98....6.8...6...34..8.3..1..7...2...6.6....28....419..5....8..79
-export const HARD_PUZZLE = '53..7....6..195....98....6.8...6...34..8.3..1..7...2...6.6....28....419..5....8..79';
+// Norvig's classic hard puzzle:
+export const HARD_PUZZLE = '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79';
 
 // Expected solution for the hard puzzle
 export const HARD_SOLUTION = [
@@ -22,8 +22,9 @@ export const EASY_PUZZLE = '4.....8.5.3..........7......2.....6.....8.4......1..
 // Arto Inkala "AI Escargot" (2006), once called the hardest sudoku in the world
 export const INKALA_PUZZLE = '1....7...3..4..5....2....6..8...1....9....3....2....7....6..4....1....5..8..2';
 
-// Unsolvable puzzle: same-row conflict (11 in same row)
-export const UNSOLVABLE_PUZZLE = '119.....4.4...4..1...1.4..4..4..1...1.4..4..4..1...1.4..4..4..1...1.4..4..4..';
+// Unsolvable puzzle: no parse-time conflict, but search reveals no solution
+// (EASY_PUZZLE with A7 modified from 8 to 9, breaking the unique solution)
+export const UNSOLVABLE_PUZZLE = '4.....9.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......';
 
 // Validate a sudoku solution (each row/col/box has digits 1-9 exactly once)
 export function validateSolution(sol: number[][]): boolean {

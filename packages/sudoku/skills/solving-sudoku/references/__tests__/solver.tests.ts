@@ -49,3 +49,55 @@ test('peers: A1 有 20 个同伴（行 8 + 列 8 + 宫 4）', () => {
 test('peers: 中心格 E5 有 20 个同伴', () => {
   assert.equal(peers.get('E5')!.length, 20);
 });
+
+import { parseGrid, DIGITS } from '../solver.ts';
+import { EASY_PUZZLE, HARD_PUZZLE, UNSOLVABLE_PUZZLE } from './fixtures.ts';
+
+test('DIGITS: 9 个数字字符', () => {
+  assert.equal(DIGITS, '123456789');
+});
+
+test('parseGrid: 合法题 → 81 格 Map', () => {
+  const g = parseGrid(EASY_PUZZLE);
+  assert.ok(g !== false);
+  assert.equal(g!.size, 81);
+  // 已知数字 A1=4, 候选 = "4"
+  assert.equal(g!.get('A1'), '4');
+  // 空格 A2='.', 候选 = 123456789
+  assert.equal(g!.get('A2'), DIGITS);
+});
+
+test('parseGrid: "0" 与 "." 都视为空格', () => {
+  const g1 = parseGrid('0'.repeat(81));
+  const g2 = parseGrid('.'.repeat(81));
+  assert.ok(g1 !== false && g2 !== false);
+  for (const s of ['A1', 'E5', 'I9']) {
+    assert.equal(g1!.get(s), DIGITS);
+    assert.equal(g2!.get(s), DIGITS);
+  }
+});
+
+test('parseGrid: 长度 ≠ 81 返回 false', () => {
+  assert.equal(parseGrid('123'), false);
+  assert.equal(parseGrid('1'.repeat(80)), false);
+  assert.equal(parseGrid('1'.repeat(82)), false);
+});
+
+test('parseGrid: 含非法字符返回 false', () => {
+  assert.equal(parseGrid('1'.repeat(80) + 'X'), false);
+});
+
+test('parseGrid: 含冲突的已知数字 → 拒绝', () => {
+  // HARD_PUZZLE 第一行 "53..7...." 解析应成功
+  const ok = parseGrid(HARD_PUZZLE);
+  assert.ok(ok !== false);
+  // 但同行两个 5 → 冲突
+  const conflict = '55' + '.'.repeat(79);
+  assert.equal(parseGrid(conflict), false);
+});
+
+test('parseGrid: UNSOLVABLE_PUZZLE 无解析期冲突，返回 Grid', () => {
+  const g = parseGrid(UNSOLVABLE_PUZZLE);
+  assert.ok(g !== false);
+  assert.equal(g!.size, 81);
+});
