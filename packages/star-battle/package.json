@@ -1,0 +1,17 @@
+{
+  "name": "@puzzle-solver/star-battle",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test skills/solving-star-battle/references/__tests__/*.tests.ts skills/decoding-star-battle/references/__tests__/*.tests.ts",
+    "type-check": "tsc --noEmit -p ../../tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "sharp": "^0.35.1"
+  }
+}
