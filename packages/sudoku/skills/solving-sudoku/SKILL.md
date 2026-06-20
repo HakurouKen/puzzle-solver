@@ -27,11 +27,11 @@ digraph flow {
 
 ```bash
 # 在 puzzle-solver monorepo 中（dev）：
-node_modules/.bin/tsx packages/sudoku/skills/solving-sudoku/references/solve-board.ts \
+node --experimental-strip-types packages/sudoku/skills/solving-sudoku/references/solve-board.ts \
     /tmp/sudoku-input.json /tmp/sudoku-output.json
 
 # 在已安装 plugin 中：
-node_modules/.bin/tsx skills/solving-sudoku/references/solve-board.ts \
+node --experimental-strip-types skills/solving-sudoku/references/solve-board.ts \
     /tmp/sudoku-input.json /tmp/sudoku-output.json
 ```
 
