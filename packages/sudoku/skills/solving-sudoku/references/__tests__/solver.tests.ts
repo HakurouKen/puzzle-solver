@@ -69,33 +69,71 @@ test('parseGrid: 合法题 → 81 格 Map', () => {
   assert.ok(!g!.get('B2')!.includes('4'));  // A1=4 同宫消除
 });
 
-test('parseGrid: "0" 与 "." 都视为空格', () => {
-  const g1 = parseGrid('0'.repeat(81));
-  const g2 = parseGrid('.'.repeat(81));
-  assert.ok(g1 !== false && g2 !== false);
+
+test('parseGrid: 含冲突的已知数字 → 拒绝', () => {
+  // HARD_PUZZLE 解析应成功
+  const ok = parseGrid(HARD_PUZZLE);
+  assert.ok(ok !== false);
+  // 同行两个 5 → 冲突
+  const conflict: number[][] = [
+    [5, 5, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+  assert.equal(parseGrid(conflict), false);
+});
+
+test('parseGrid: 形状不是 9 行 → false', () => {
+  assert.equal(parseGrid([]), false);
+  assert.equal(parseGrid([[]] as unknown as number[][]), false);
+  assert.equal(parseGrid(Array(8).fill(Array(9).fill(0)) as unknown as number[][]), false);
+  assert.equal(parseGrid(Array(10).fill(Array(9).fill(0)) as unknown as number[][]), false);
+});
+
+test('parseGrid: 行长度不是 9 → false', () => {
+  const bad = Array(9).fill(0).map(() => [0, 0, 0, 0, 0, 0, 0, 0]) as unknown as number[][];
+  assert.equal(parseGrid(bad), false);
+});
+
+test('parseGrid: 非整数 / 越界 / NaN → false', () => {
+  const a = [[1, 2, 3, 4, 5, 6, 7, 8, 9.5], ...Array(8).fill(Array(9).fill(0))] as unknown as number[][];
+  assert.equal(parseGrid(a), false);
+  const b = [[-1, ...Array(8).fill(0)], ...Array(8).fill(Array(9).fill(0))] as unknown as number[][];
+  assert.equal(parseGrid(b), false);
+  const c = [[NaN, ...Array(8).fill(0)], ...Array(8).fill(Array(9).fill(0))] as unknown as number[][];
+  assert.equal(parseGrid(c), false);
+  const d = [[10, ...Array(8).fill(0)], ...Array(8).fill(Array(9).fill(0))] as unknown as number[][];
+  assert.equal(parseGrid(d), false);
+});
+
+test('parseGrid: 完全空盘（81 个 0）能解析', () => {
+  const empty: number[][] = Array(9).fill(0).map(() => Array(9).fill(0));
+  const g = parseGrid(empty);
+  assert.ok(g !== false);
   for (const s of ['A1', 'E5', 'I9']) {
-    assert.equal(g1!.get(s), DIGITS);
-    assert.equal(g2!.get(s), DIGITS);
+    assert.equal(g!.get(s), DIGITS);
   }
 });
 
-test('parseGrid: 长度 ≠ 81 返回 false', () => {
-  assert.equal(parseGrid('123'), false);
-  assert.equal(parseGrid('1'.repeat(80)), false);
-  assert.equal(parseGrid('1'.repeat(82)), false);
-});
-
-test('parseGrid: 含非法字符返回 false', () => {
-  assert.equal(parseGrid('1'.repeat(80) + 'X'), false);
-});
-
-test('parseGrid: 含冲突的已知数字 → 拒绝', () => {
-  // HARD_PUZZLE 第一行 "53..7...." 解析应成功
-  const ok = parseGrid(HARD_PUZZLE);
-  assert.ok(ok !== false);
-  // 但同行两个 5 → 冲突
-  const conflict = '55' + '.'.repeat(79);
-  assert.equal(parseGrid(conflict), false);
+test('parseGrid: 同行冲突 (5, 5, ...) → false', () => {
+  const bad: number[][] = [
+    [5, 5, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+  assert.equal(parseGrid(bad), false);
 });
 
 import { assign, eliminate } from '../solver.ts';
@@ -229,7 +267,18 @@ test('solve: UNSOLVABLE_PUZZLE 返回 null', () => {
 });
 
 test('solve: 已完成盘直接返回', () => {
-  const solved = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+  // 534678912 672195348 198342567 859761423 426853791 713924856 961537284 287419635 345286179
+  const solved: number[][] = [
+    [5, 3, 4, 6, 7, 8, 9, 1, 2],
+    [6, 7, 2, 1, 9, 5, 3, 4, 8],
+    [1, 9, 8, 3, 4, 2, 5, 6, 7],
+    [8, 5, 9, 7, 6, 1, 4, 2, 3],
+    [4, 2, 6, 8, 5, 3, 7, 9, 1],
+    [7, 1, 3, 9, 2, 4, 8, 5, 6],
+    [9, 6, 1, 5, 3, 7, 2, 8, 4],
+    [2, 8, 7, 4, 1, 9, 6, 3, 5],
+    [3, 4, 5, 2, 8, 6, 1, 7, 9],
+  ];
   const r = solve(solved);
   assert.ok(r !== null);
   // 步骤数应较少（仅 81 个 assign，无搜索）
@@ -237,7 +286,8 @@ test('solve: 已完成盘直接返回', () => {
 });
 
 test('solve: 空盘（81 个 0）能解出', () => {
-  const r = solve('0'.repeat(81));
+  const empty: number[][] = Array(9).fill(0).map(() => Array(9).fill(0));
+  const r = solve(empty);
   assert.ok(r !== null);
   assert.ok(validateSolution(r!.solution));
 });

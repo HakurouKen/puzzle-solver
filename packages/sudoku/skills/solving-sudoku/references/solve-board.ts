@@ -38,8 +38,21 @@ if (parsed.puzzle.length !== 81) {
   process.exit(1);
 }
 
+function parseGridString(s: string): number[][] {
+  const grid: number[][] = [];
+  for (let r = 0; r < 9; r++) {
+    const row: number[] = [];
+    for (let c = 0; c < 9; c++) {
+      const ch = s[r * 9 + c];
+      row.push(ch === '.' ? 0 : parseInt(ch, 10));
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
 const t0 = process.hrtime.bigint();
-const result = solve(parsed.puzzle);
+const result = solve(parseGridString(parsed.puzzle));
 const t1 = process.hrtime.bigint();
 const ms = Number(t1 - t0) / 1e6;
 

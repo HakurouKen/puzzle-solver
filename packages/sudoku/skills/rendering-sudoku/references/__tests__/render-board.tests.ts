@@ -34,7 +34,7 @@ test('classifySteps: search step then assign -> searched', () => {
 
 test('renderBoard: 9 rows + box separators', () => {
   const out = renderBoard({
-    puzzle: HARD_PUZZLE,
+    puzzle: HARD_PUZZLE.map(row => row.join('')).join(''),
     solution: HARD_SOLUTION as unknown as number[][],
     steps: [],
   });
@@ -47,6 +47,6 @@ test('renderBoard: 9 rows + box separators', () => {
 });
 
 test('renderBoard: null solution -> friendly message', () => {
-  const out = renderBoard({ puzzle: HARD_PUZZLE, solution: null, steps: [] });
+  const out = renderBoard({ puzzle: HARD_PUZZLE.map(row => row.join('')).join(''), solution: null, steps: [] });
   assert.match(out, /无解|No solution/i);
 });
