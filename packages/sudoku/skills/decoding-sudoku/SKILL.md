@@ -1,6 +1,6 @@
 ---
 name: decoding-sudoku
-description: Use when user provides a Sudoku puzzle image (or asks to solve one from a screenshot) and the puzzle's 9×9 grid needs to be decoded from the image. Renders the decoded puzzle for user confirmation, then outputs a confirmed {puzzle} JSON ready to hand off to solving-sudoku.
+description: Use when user provides a Sudoku puzzle image (or asks to solve one from a screenshot) and the puzzle's 9×9 grid needs to be decoded from the image. Renders the decoded puzzle for user confirmation, then outputs a confirmed 9×9 number[][] JSON ready to hand off to solving-sudoku.
 ---
 
 # Decoding Sudoku
@@ -15,7 +15,7 @@ digraph flow {
     "有图片?" [shape=diamond];
     "向用户索要图片" [shape=box];
     "识图: 读 9×9 网格" [shape=box];
-    "生成 81 字符 puzzle 字符串" [shape=box];
+    "生成 9×9 puzzle 二维数组" [shape=box];
     "写 input.json" [shape=box];
     "invoke rendering-sudoku 显示" [shape=box];
     "等待用户确认/纠正" [shape=diamond];
@@ -24,7 +24,7 @@ digraph flow {
     "有图片?" -> "识图: 读 9×9 网格" [label="是"];
     "有图片?" -> "向用户索要图片" [label="否"];
     "向用户索要图片" -> "用户消息";
-    "识图: 读 9×9 网格" -> "生成 81 字符 puzzle 字符串"
+    "识图: 读 9×9 网格" -> "生成 9×9 puzzle 二维数组"
         -> "写 input.json" -> "invoke rendering-sudoku 显示"
         -> "等待用户确认/纠正";
     "等待用户确认/纠正" -> "invoke solving-sudoku" [label="确认"];
@@ -47,19 +47,31 @@ digraph flow {
 
 如果某些格难以识别（光线、模糊、角度），在 puzzle 字符串中用 `.` 标记为"待定/空格"，**不要猜**。
 
-### 3. 生成 puzzle 字符串
+### 3. 生成 9×9 puzzle 二维数组
 
-81 字符，行优先：
-- 已知数字 = 数字本身
-- 空格 = `.`（或 `0`，两种都接受）
+把识图结果按行输出为 `number[][]`，行优先：
+- 已知数字 = 数字本身（1-9）
+- 空格 = `0`
 
-例：第一行 `5 3 . . 7 . . . .` 第二行 `6 . . 1 9 5 . . .` ... 拼成 `"53..7....6..195....98....6.8...6...34..8.3..1..7...2...6.6....28....419..5....8..79"`
+例：第一行 `5 3 0 0 7 0 0 0 0` 第二行 `6 0 0 1 9 5 0 0 0` ... 拼成 9×9 数组。
 
 ### 4. 写 input.json
 
 ```bash
 cat > /tmp/sudoku-input.json <<'JSON'
-{ "puzzle": "53..7....6..195....98....6.8...6...34..8.3..1..7...2...6.6....28....419..5....8..79" }
+{
+  "puzzle": [
+    [5, 3, 0, 0, 7, 0, 0, 0, 0],
+    [6, 0, 0, 1, 9, 5, 0, 0, 0],
+    [0, 9, 8, 0, 0, 0, 0, 6, 0],
+    [8, 0, 0, 0, 6, 0, 0, 0, 3],
+    [4, 0, 0, 8, 0, 3, 0, 0, 1],
+    [7, 0, 0, 0, 2, 0, 0, 0, 6],
+    [0, 6, 0, 0, 0, 0, 2, 8, 0],
+    [0, 0, 0, 4, 1, 9, 0, 0, 5],
+    [0, 0, 0, 0, 8, 0, 0, 7, 9]
+  ]
+}
 JSON
 ```
 
@@ -78,11 +90,17 @@ render 由 [[rendering-sudoku]] skill 负责。input.json 中无 solution，rend
 ## 输入格式约定
 
 ```json
-{ "puzzle": "53..7....6..195....98....6.8...6...34..8.3..1..7...2...6.6....28....419..5....8..79" }
+{
+  "puzzle": [
+    [5, 3, 0, 0, 7, 0, 0, 0, 0],
+    [6, 0, 0, 1, 9, 5, 0, 0, 0],
+    [0, 9, 8, 0, 0, 0, 0, 6, 0]
+  ]
+}
 ```
 
-- `puzzle`：81 字符字符串
-- `.` / `0` = 空格
+- `puzzle`：9×9 二维数字数组（`number[][]`）
+- `0` = 空格
 - `1-9` = 已知数
 
 ## 常见错误
