@@ -48,10 +48,19 @@ test('solve-board: input.json 缺 puzzle → 退出码 1', () => {
   assert.equal(code, 1);
 });
 
-test('solve-board: puzzle 长度错误 → 退出码 1', () => {
+test('solve-board: puzzle 不是数组 → 退出码 1', () => {
   const dir = mkdtempSync(join(tmpdir(), 'sudoku-test-'));
   const input = join(dir, 'in.json');
-  writeFileSync(input, JSON.stringify({ puzzle: '123' }));
+  writeFileSync(input, JSON.stringify({ puzzle: '53..7....' }));  // 旧格式字符串
+  const { stderr, code } = run([input]);
+  assert.equal(code, 1);
+  assert.match(stderr, /必须是 9×9 二维数组/);
+});
+
+test('solve-board: puzzle 行数 ≠ 9 → 退出码 1', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sudoku-test-'));
+  const input = join(dir, 'in.json');
+  writeFileSync(input, JSON.stringify({ puzzle: [[1, 2, 3]] }));  // 1 行 3 列
   const { code } = run([input]);
   assert.equal(code, 1);
 });
