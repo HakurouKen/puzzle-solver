@@ -23,7 +23,7 @@ interface Step {
 }
 
 interface Output {
-  puzzle?: string;
+  puzzle?: number[][];
   solution?: number[][] | null;
   steps?: Step[];
 }
@@ -70,16 +70,19 @@ export function renderBoard(output: Output): string {
   }
 
   const sol = output.solution;
-  const puzzle = output.puzzle ?? '';
+  const puzzle = output.puzzle ?? [];
   const givenSet = new Set<string>();
 
   // Mark cells that were provided in the original puzzle
-  for (let i = 0; i < puzzle.length && i < 81; i++) {
-    const ch = puzzle[i];
-    if (ch !== '.' && ch !== '0') {
-      const row = String.fromCharCode('A'.charCodeAt(0) + Math.floor(i / 9));
-      const col = String(i % 9 + 1);
-      givenSet.add(row + col);
+  for (let r = 0; r < puzzle.length && r < 9; r++) {
+    const row = puzzle[r];
+    if (!row) continue;
+    for (let c = 0; c < row.length && c < 9; c++) {
+      if (row[c] !== 0) {
+        const rowLabel = String.fromCharCode('A'.charCodeAt(0) + r);
+        const colLabel = String(c + 1);
+        givenSet.add(rowLabel + colLabel);
+      }
     }
   }
 
