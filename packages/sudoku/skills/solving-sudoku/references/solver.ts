@@ -59,28 +59,28 @@ for (const s of squares) {
 
 export const DIGITS = '123456789';
 
-// 解析 81 字符题面为 Grid。返回 false 表示有冲突或格式错误。
-export function parseGrid(input: string): Grid | false {
-  // 长度必须为 81
-  if (input.length !== 81) return false;
-
-  // 把 ".0" 都视为空
-  const normalized = input.replace(/0/g, '.');
-
-  // 字符集校验
-  for (const ch of normalized) {
-    if (ch !== '.' && !DIGITS.includes(ch)) return false;
+// 解析 9×9 二维数组题面为 Grid。返回 false 表示有冲突或形状错误。
+// 0 = 空格, 1-9 = 已知数。行优先（puzzle[0] 是第 1 行）。
+export function parseGrid(input: number[][]): Grid | false {
+  // 严格 9×9 形状校验
+  if (!Array.isArray(input) || input.length !== 9) return false;
+  for (const row of input) {
+    if (!Array.isArray(row) || row.length !== 9) return false;
+    for (const v of row) {
+      if (!Number.isInteger(v) || v < 0 || v > 9) return false;
+    }
   }
-
-  // 构造 Grid：每格先填满候选，再对已知数字格做 assign
+  // 构造 Grid：每格先填满候选，对已知数字格 assign
   const grid: Grid = new Map();
   for (const s of squares) grid.set(s, DIGITS);
-
-  for (const [i, ch] of [...normalized].entries()) {
-    if (ch === '.') continue;
-    const s = squares[i];
-    const ok = assign(grid, s, ch, []);
-    if (ok === false) return false;
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const v = input[r][c];
+      if (v === 0) continue;  // 0 = 空格
+      const s = squares[r * 9 + c];
+      const ok = assign(grid, s, String(v), []);
+      if (ok === false) return false;
+    }
   }
   return grid;
 }
@@ -202,7 +202,7 @@ export function search(grid: Grid, steps: Step[]): Grid | false {
 }
 
 // 入口：解析 + 约束传播 + 搜索。返回 { solution, steps } 或 null。
-export function solve(input: string): SolveResult | null {
+export function solve(input: number[][]): SolveResult | null {
   const grid = parseGrid(input);
   if (grid === false) return null;
   const steps: Step[] = [];
