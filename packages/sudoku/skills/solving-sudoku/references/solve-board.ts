@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { solve } from './solver.ts';
 
-interface Input { puzzle?: string }
+interface Input { puzzle?: number[][] | string }
 
 const inputPath = process.argv[2];
 const outputPath = process.argv[3] ?? '/tmp/sudoku-output.json';
@@ -29,12 +29,12 @@ try {
   console.error(`错误: 无法解析 JSON: ${(e as Error).message}`);
   process.exit(1);
 }
-if (typeof parsed.puzzle !== 'string') {
-  console.error('错误: 输入 JSON 缺 puzzle 字段');
+if (!Array.isArray(parsed.puzzle)) {
+  console.error('错误: puzzle 必须是 9×9 二维数组（number[][]），空格为 0');
   process.exit(1);
 }
-if (parsed.puzzle.length !== 81) {
-  console.error(`错误: puzzle 长度必须为 81, 实际 ${parsed.puzzle.length}`);
+if (parsed.puzzle.length !== 9) {
+  console.error(`错误: puzzle 必须有 9 行, 实际 ${parsed.puzzle.length}`);
   process.exit(1);
 }
 
