@@ -185,26 +185,27 @@ description: Use when a Killer Sudoku puzzle (as a 9×9 grid + cages) is already
 
 ### 简介
 
-入口：一份已被用户确认的 `{puzzle, cages}` JSON 文件路径（一般是 `/tmp/killer-sudoku-input.json`，由 [[decoding-killer-sudoku]] 写出并请用户核对过）。
+入口：一份已被用户确认的 `{puzzle, cages}` JSON 数据对象（由 [[decoding-killer-sudoku]] 识图生成并请用户核对过）。CLI 和程序化两种用法都接受同一数据。
 
 ### 工作流
 
 ```dot
 digraph flow {
-    "拿到已确认 input.json" [shape=doublecircle];
-    "调 solve-board → 写 /tmp/killer-sudoku-output.json" [shape=box];
+    "拿到已确认 {puzzle, cages} 数据" [shape=doublecircle];
+    "调 solve → 返回 {solution, steps}" [shape=box];
     "invoke rendering-killer-sudoku" [shape=box];
-    "拿到已确认 input.json" -> "调 solve-board → 写 /tmp/killer-sudoku-output.json"
+    "拿到已确认 {puzzle, cages} 数据" -> "调 solve → 返回 {solution, steps}"
         -> "invoke rendering-killer-sudoku";
 }
 ```
 
-前置：本 skill 假定 input.json 的 `puzzle` 和 `cages` 字段已经被用户看过并确认。
+前置：本 skill 假定 `puzzle` 和 `cages` 数据已经被用户看过并确认。
 
 ### 步骤详解
 
 #### 1. 求解
 
+CLI（通过文件路径传输数据）：
 ```bash
 # 在 puzzle-solver monorepo 中（dev）：
 node --experimental-strip-types packages/killer-sudoku/skills/solving-killer-sudoku/references/solve-board.ts \
@@ -214,6 +215,15 @@ node --experimental-strip-types packages/killer-sudoku/skills/solving-killer-sud
 node --experimental-strip-types skills/solving-killer-sudoku/references/solve-board.ts \
     /tmp/killer-sudoku-input.json
 ```
+
+程序化：
+```ts
+import { solve } from './solver.ts'
+const result = solve({ puzzle, cages })
+// result: { solution: number[][], steps: Step[] } | null
+```
+
+输入数据 `{puzzle, cages}` 直接传入 `solve()`，文件路径仅是 CLI 的数据传输方式。
 
 `solve-board.ts` 调 `solver.ts` 中的 `solve()`：
 
@@ -228,7 +238,9 @@ node --experimental-strip-types skills/solving-killer-sudoku/references/solve-bo
    - 45 法则：行/列/宫总和 45，跨笼推导孤立格
 6. **MRV 回溯搜索**：候选最少格优先分支
 
-输出写入 `/tmp/killer-sudoku-output.json`：
+输出（`SolveResult` 对象）：
+- `solution`：9×9 数字矩阵，无解时为 `null`
+- `steps`：求解步骤数组
 
 ```json
 {
@@ -245,13 +257,13 @@ node --experimental-strip-types skills/solving-killer-sudoku/references/solve-bo
 }
 ```
 
-solve-board 不修改 input.json，结果一律写到 output.json。
+solve-board（CLI 入口）将结果序列化写入 `/tmp/killer-sudoku-output.json`，不修改输入文件。
 
 **退出码**：0 = 成功（含无解），1 = 输入错误。
 
 #### 2. 渲染解
 
-不要直跑 render-board，invoke [[rendering-killer-sudoku]]，把 {puzzle, cages, solution} 传过去。
+不要直跑 render-board，invoke [[rendering-killer-sudoku]]，把 `{puzzle, cages, solution}` 数据对象传过去。
 
 ### 输入格式约定
 
