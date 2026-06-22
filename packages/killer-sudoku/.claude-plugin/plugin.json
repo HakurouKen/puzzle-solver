@@ -1,0 +1,5 @@
+{
+  "name": "killer-sudoku-solver",
+  "version": "0.1.0",
+  "description": "Killer Sudoku solver with image decoding, constraint solving, and terminal rendering"
+}
