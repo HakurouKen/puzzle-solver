@@ -4,12 +4,12 @@
 //   k = 2 → solve-2.ts (含 regionShapeEnum / forcedChain)
 //   其他  → solve-k.ts (通用)
 //
-// 求解后写 output.json: { regions, k, solution, steps }
+// 求解后默认向 stdout 写 JSON；显式给路径时写文件
 // 不修改 input.json，不调用渲染——展示由 rendering-star-battle skill 负责。
 //
 // 用法: tsx solve-board.ts <input.json> [output.json]
 //   input.json:  { regions: number[][], k: number }   (k 必填)
-//   output.json: 默认 /tmp/sb-output.json
+//   output.json: 可选；省略时结果 JSON 写到 stdout
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -21,7 +21,7 @@ const solverDir = join(here, 'solver');
 interface Input { regions: number[][]; k?: number }
 
 const inputPath = process.argv[2];
-const outputPath = process.argv[3] ?? '/tmp/sb-output.json';
+const outputPath = process.argv[3];
 
 if (!inputPath) {
   console.error('用法: tsx solve-board.ts <input.json> [output.json]');
@@ -62,24 +62,26 @@ const result: { solution: number[][]; steps: string[] } = solve(regions, k);
 const t1 = process.hrtime.bigint();
 const ms = Number(t1 - t0) / 1e6;
 
-console.log(`求解器: ${solverPath.split('/').pop()}, 棋盘 ${n}×${n}, k=${k}`);
-console.log(`耗时: ${ms.toFixed(2)} ms`);
-console.log(`步骤数: ${result.steps.length}`);
-console.log('');
-console.log('===== 推导步骤 =====');
-for (const s of result.steps) console.log(s);
+console.error(`求解器: ${solverPath.split('/').pop()}, 棋盘 ${n}×${n}, k=${k}`);
+console.error(`耗时: ${ms.toFixed(2)} ms`);
+console.error(`步骤数: ${result.steps.length}`);
+console.error('');
+console.error('===== 推导步骤 =====');
+for (const s of result.steps) console.error(s);
 
 const hasSolution = result.solution.some(row => row.some(v => v === 1));
-if (!hasSolution) {
-  console.log('');
-  console.log('===== 结果: 无解 =====');
-  process.exit(0);
+if (!hasSolution) console.error('\n===== 结果: 无解 =====');
+
+const output = {
+  regions,
+  k,
+  solution: hasSolution ? result.solution : null,
+  steps: result.steps,
+};
+const serialized = JSON.stringify(output, null, 2);
+if (outputPath) {
+  writeFileSync(outputPath, serialized);
+  console.error(`结果已写到 ${outputPath}`);
+} else {
+  process.stdout.write(`${serialized}\n`);
 }
-
-writeFileSync(
-  outputPath,
-  JSON.stringify({ regions, k, solution: result.solution, steps: result.steps }, null, 2),
-);
-
-console.log('');
-console.log(`已写解到 ${outputPath}，请调用 rendering-star-battle 展示。`);

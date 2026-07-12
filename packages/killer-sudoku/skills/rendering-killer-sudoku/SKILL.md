@@ -34,12 +34,10 @@ CLI（通过 stdin 传输 JSON 数据）：
 
 ```bash
 node <repo-root>/scripts/ensure-runtime.mjs killer-sudoku
-# 默认渲染 SVG，写到 /tmp/killer-sudoku-board.svg，并打印路径
-pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts < /tmp/killer-sudoku-output.json
 # 指定输出路径
-pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts -o /tmp/board.svg < input.json
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts -o "$BOARD_SVG" < "$DATA_JSON"
 # 终端文本渲染（旧行为）
-pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts --text < input.json
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts --text < "$DATA_JSON"
 # heredoc 直接内嵌数据
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts <<'JSON'
 { "puzzle": [...], "cages": [...], "solution": [...] }
@@ -116,9 +114,9 @@ Cages:
 
 ## 与兄弟 skill 的关系
 
-- `decoding-killer-sudoku` 写出 input.json 后调用本 skill 让用户确认识别结果
-- `solving-killer-sudoku` 写出 output.json 后调用本 skill 展示解
-- 本 skill **不读**传入数据之外的状态，**不修改**任何文件
+- `decoding-killer-sudoku` 把 `{puzzle, cages}` 交给本 skill，让用户确认识别后再进入 solving
+- `solving-killer-sudoku` 可把 `{puzzle, cages, solution, steps}` 交给本 skill 展示解
+- 本 skill **不读**传入数据之外的状态，**不修改**输入数据
 
 ## 常见错误
 

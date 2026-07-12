@@ -1,17 +1,17 @@
 ---
 name: rendering-sudoku
-description: Use when a Sudoku solution needs to be rendered to the terminal. Invoked by sibling skills decoding-sudoku and solving-sudoku via JSON file path.
+description: Use when Sudoku puzzle or solution data needs to be rendered to the terminal. Invoked by sibling skills decoding-sudoku and solving-sudoku as part of their data flow.
 ---
 
 # Rendering Sudoku
 
 把一份 `{puzzle, solution}` JSON 渲染成终端 ASCII 数独表格。**职责单一**：读 JSON、画 9×9 表格。不识图、不求解、不标注推理来源。
 
-input.json（无 solution）和 output.json（有 solution）**走同一渲染**：哪个矩阵存在就画哪个，每个格子要么有数字要么空白，不区分原题/推理/搜索。
+无 `solution` 的解码数据和有 `solution` 的求解结果**走同一渲染**：哪个矩阵存在就画哪个，每个格子要么有数字要么空白，不区分原题/推理/搜索。
 
 ## 输入
 
-接受一个 JSON 文件路径（绝对路径或相对当前目录），文件 schema：
+接受以下 schema 的 JSON 数据对象。传输方式由调用方决定；CLI 可使用 JSON 文件路径，但 skill 间交接不绑定文件名或目录：
 
 ```json
 {
@@ -43,9 +43,9 @@ pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-b
 
 ## 与兄弟 skill 的关系
 
-- `decoding-sudoku` 写出 input.json 后调用本 skill 让用户确认识别
-- `solving-sudoku` 写出 output.json 后调用本 skill 展示解
-- 本 skill **不读** 传入 JSON 之外的状态，**不修改**任何文件
+- `decoding-sudoku` 把 `{puzzle}` 交给本 skill，让用户确认识别后再进入 solving
+- `solving-sudoku` 可把 `{puzzle, solution, steps}` 交给本 skill 展示解
+- 本 skill **不读**传入数据之外的状态，**不修改**输入数据
 
 ## 红旗 — 立即停止
 

@@ -25,19 +25,30 @@ test('solve-board: 缺参数 → 退出码 2 + stderr 用法提示', () => {
   assert.match(stderr, /用法/);
 });
 
-test('solve-board: 合法题 → 写 output.json + stdout 元信息', () => {
+test('solve-board: 合法题 → 显式路径写 output.json', () => {
   const dir = mkdtempSync(join(tmpdir(), 'sudoku-test-'));
   const input = join(dir, 'in.json');
   const output = join(dir, 'out.json');
   writeFileSync(input, JSON.stringify({ puzzle: EASY_PUZZLE }));
   const { stdout, code } = run([input, output]);
   assert.equal(code, 0);
-  assert.match(stdout, /求解器/);
+  assert.equal(stdout, '');
   assert.ok(existsSync(output));
   const o = JSON.parse(readFileSync(output, 'utf8'));
   assert.ok(o.solution);
   assert.equal(o.solution.length, 9);
   assert.ok(o.steps.length > 0);
+});
+
+test('solve-board: 未指定输出路径 → stdout 返回 JSON', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sudoku-test-'));
+  const input = join(dir, 'in.json');
+  writeFileSync(input, JSON.stringify({ puzzle: EASY_PUZZLE }));
+  const { stdout, code } = run([input]);
+  assert.equal(code, 0);
+  const result = JSON.parse(stdout);
+  assert.equal(result.solution.length, 9);
+  assert.ok(result.steps.length > 0);
 });
 
 test('solve-board: input.json 缺 puzzle → 退出码 1', () => {

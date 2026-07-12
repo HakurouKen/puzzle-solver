@@ -4,8 +4,7 @@
 // 用法:
 //   echo '{"puzzle":[...],"cages":[...]}' | \
 //     node --import tsx solve-board.ts [output.json]
-//
-// output.json 默认 /tmp/killer-sudoku-output.json
+// 省略 output.json 时，结果 JSON 写到 stdout。
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +25,7 @@ Input (stdin, JSON):
   ]
 }
 
-Output: writes result to output.json (default /tmp/killer-sudoku-output.json)
+Output: writes JSON to stdout, or to output.json when explicitly provided
 `);
 }
 
@@ -44,7 +43,7 @@ function main(): number {
     return 0;
   }
 
-  const outputPath = args[0] ?? '/tmp/killer-sudoku-output.json';
+  const outputPath = args[0];
 
   // 读取 stdin
   let input: any;
@@ -72,18 +71,20 @@ function main(): number {
     steps: result?.steps ?? [],
   };
 
-  writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  const serialized = JSON.stringify(output, null, 2);
+  if (outputPath) writeFileSync(outputPath, serialized);
+  else process.stdout.write(`${serialized}\n`);
 
   // 打印步骤日志
   if (result) {
-    process.stdout.write(`✓ Solved in ${result.steps.length} steps\n\n`);
+    process.stderr.write(`✓ Solved in ${result.steps.length} steps\n\n`);
     for (const step of result.steps) {
-      process.stdout.write(`  ${step.detail}\n`);
+      process.stderr.write(`  ${step.detail}\n`);
     }
-    process.stdout.write(`\nOutput written to: ${outputPath}\n`);
+    if (outputPath) process.stderr.write(`\nOutput written to: ${outputPath}\n`);
   } else {
-    process.stdout.write(`✗ No solution found\n`);
-    process.stdout.write(`Output written to: ${outputPath}\n`);
+    process.stderr.write('✗ No solution found\n');
+    if (outputPath) process.stderr.write(`Output written to: ${outputPath}\n`);
   }
 
   return 0;

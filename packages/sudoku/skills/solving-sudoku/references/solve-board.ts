@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// 入口：读 input.json → solve() → 写 output.json + stdout 元信息
+// 入口：读 input.json → solve() → stdout JSON；显式给路径时写文件
 //
 // 用法: node --import tsx solve-board.ts <input.json> [output.json]
 //   input.json:  { "puzzle": "53..7....6..195....98..." }
-//   output.json: 默认 /tmp/sudoku-output.json
+//   output.json: 可选；省略时结果 JSON 写到 stdout
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { solve } from './solver.ts';
@@ -11,7 +11,7 @@ import { solve } from './solver.ts';
 interface Input { puzzle?: number[][] | string }
 
 const inputPath = process.argv[2];
-const outputPath = process.argv[3] ?? '/tmp/sudoku-output.json';
+const outputPath = process.argv[3];
 
 if (!inputPath) {
   console.error('用法: node --import tsx solve-board.ts <input.json> [output.json]');
@@ -43,27 +43,23 @@ const result = solve(parsed.puzzle);
 const t1 = process.hrtime.bigint();
 const ms = Number(t1 - t0) / 1e6;
 
-if (result === null) {
-  console.log(`求解器: Norvig, 9×9, 无解`);
-  console.log(`耗时: ${ms.toFixed(2)} ms`);
-  writeFileSync(
-    outputPath,
-    JSON.stringify({ puzzle: parsed.puzzle, solution: null, steps: [] }, null, 2),
-  );
-  console.log(`已写 (无解) 到 ${outputPath}`);
-  process.exit(0);
+const output = result === null
+  ? { puzzle: parsed.puzzle, solution: null, steps: [] }
+  : { puzzle: parsed.puzzle, solution: result.solution, steps: result.steps };
+const serialized = JSON.stringify(output, null, 2);
+
+console.error(`求解器: Norvig, 9×9${result === null ? ', 无解' : ''}`);
+console.error(`耗时: ${ms.toFixed(2)} ms`);
+console.error(`步骤数: ${output.steps.length}`);
+if (result !== null) {
+  console.error('');
+  console.error('===== 推导步骤 =====');
+  for (const s of result.steps) console.error(`${s.type}: ${s.detail}`);
 }
 
-console.log(`求解器: Norvig, 9×9`);
-console.log(`耗时: ${ms.toFixed(2)} ms`);
-console.log(`步骤数: ${result.steps.length}`);
-console.log('');
-console.log('===== 推导步骤 =====');
-for (const s of result.steps) console.log(`${s.type}: ${s.detail}`);
-
-writeFileSync(
-  outputPath,
-  JSON.stringify({ puzzle: parsed.puzzle, solution: result.solution, steps: result.steps }, null, 2),
-);
-console.log('');
-console.log(`已写解到 ${outputPath}，请调用 rendering-sudoku 展示。`);
+if (outputPath) {
+  writeFileSync(outputPath, serialized);
+  console.error(`结果已写到 ${outputPath}`);
+} else {
+  process.stdout.write(`${serialized}\n`);
+}

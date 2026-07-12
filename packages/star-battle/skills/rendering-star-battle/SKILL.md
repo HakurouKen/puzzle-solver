@@ -1,6 +1,6 @@
 ---
 name: rendering-star-battle
-description: Use when a Star Battle puzzle needs to be rendered to the terminal — either for confirming decoded regions (no solution yet) or for showing the final solved board (with star placement). Invoked by sibling skills decoding-star-battle and solving-star-battle via JSON file path.
+description: Use when Star Battle puzzle data needs to be rendered to the terminal, either for confirming decoded regions or showing a solved board. Invoked by sibling skills as part of the decoding-to-solving data flow.
 ---
 
 # Rendering Star Battle
@@ -9,7 +9,7 @@ description: Use when a Star Battle puzzle needs to be rendered to the terminal 
 
 ## 输入
 
-接受一个 JSON 文件路径（绝对路径或相对当前目录），文件 schema：
+接受以下 schema 的 JSON 数据对象。传输方式由调用方决定；CLI 可使用 JSON 文件路径，但 skill 间交接不绑定文件名或目录：
 
 ```json
 {
@@ -23,7 +23,7 @@ description: Use when a Star Battle puzzle needs to be rendered to the terminal 
 - `k`：每行/列/区星数，正整数，必填
 - `solution`：n×n 0/1 方阵，**可选**。有则星格用 ★ 替代 region id。
 
-兄弟 skill 写出的 input.json（无 solution）和 output.json（有 solution）都符合此 schema，rendering 无须区分。
+无 `solution` 的解码数据和有 `solution` 的求解结果都符合此 schema，rendering 无须区分。
 
 ## 用法
 
@@ -43,9 +43,9 @@ pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-b
 
 ## 与兄弟 skill 的关系
 
-- `decoding-star-battle` 写出 input.json 后调用本 skill 让用户确认识别
-- `solving-star-battle` 写出 output.json 后调用本 skill 展示带 ★ 的解
-- 本 skill **不读** input.json / output.json 之外的状态，**不修改**任何文件
+- `decoding-star-battle` 把 `{regions, k}` 交给本 skill，让用户确认识别后再进入 solving
+- `solving-star-battle` 可把 `{regions, k, solution, steps}` 交给本 skill 展示带 ★ 的解
+- 本 skill **不读**传入数据之外的状态，**不修改**输入数据
 
 ## 红旗 — 立即停止
 

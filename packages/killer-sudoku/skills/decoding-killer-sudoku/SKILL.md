@@ -18,7 +18,7 @@ digraph flow {
     "读 labels_grid.png 填 sum" [shape=box];
     "读 digits_grid.png 填 puzzle" [shape=box];
     "∑sum==405?" [shape=diamond];
-    "写 /tmp/killer-sudoku-input.json" [shape=box];
+    "生成 {puzzle, cages} 数据" [shape=box];
     "调用 rendering-killer-sudoku 显示" [shape=box];
     "等待用户确认/纠正" [shape=diamond];
     "调用 solving-killer-sudoku" [shape=box];
@@ -29,8 +29,8 @@ digraph flow {
     "跑 decode-image.py 得 candidate + 拼图" -> "读 labels_grid.png 填 sum"
         -> "读 digits_grid.png 填 puzzle" -> "∑sum==405?";
     "∑sum==405?" -> "读 labels_grid.png 填 sum" [label="否"];
-    "∑sum==405?" -> "写 /tmp/killer-sudoku-input.json" [label="是"];
-    "写 /tmp/killer-sudoku-input.json" -> "调用 rendering-killer-sudoku 显示"
+    "∑sum==405?" -> "生成 {puzzle, cages} 数据" [label="是"];
+    "生成 {puzzle, cages} 数据" -> "调用 rendering-killer-sudoku 显示"
         -> "等待用户确认/纠正";
     "等待用户确认/纠正" -> "调用 solving-killer-sudoku" [label="确认"];
     "等待用户确认/纠正" -> "跑 decode-image.py 得 candidate + 拼图" [label="纠正"];
@@ -120,23 +120,19 @@ sum 小数字**必然**位于笼锚点格的左上角。锚点 = 该笼中「行
 - `puzzle`：9×9 `number[][]`，`0` = 空格，`1-9` = 已知数
 - `cages`：笼列表，`cells` 为 0-indexed `[row, col]` 数组，`sum` 为笼目标和
 
-### 4. 写 input.json
+### 4. 生成解码数据
 
-```bash
-cat > /tmp/killer-sudoku-input.json <<'JSON'
-{ "puzzle": [...], "cages": [...] }
-JSON
-```
+保留 `{ "puzzle": number[][], "cages": Cage[] }` 数据对象供后续 skill 使用。数据可通过内存、stdin 或调用方选择的文件传递；不要要求固定文件名或 `/tmp` 路径。
 
 ### 5. 渲染并请求确认
 
-render 由项目级 `rendering-killer-sudoku` skill 负责。打印棋盘和笼列表后**主动询问用户**："识别如上盘面和笼定义，是否正确？如有错误请指出（例如'行 3 列 4 应为 5 而非 6'或'笼 2 的 sum 应为 15'）。"
+把 `{puzzle, cages}` 数据交给项目级 `rendering-killer-sudoku` skill。打印棋盘和笼列表后**主动询问用户**："识别如上盘面和笼定义，是否正确？如有错误请指出（例如'行 3 列 4 应为 5 而非 6'或'笼 2 的 sum 应为 15'）。"
 
 如果用户指出错误，**回到第 2 步**重识，不要自己脑补修正。
 
 ### 6. 交棒给 solving-killer-sudoku
 
-用户确认后，**必须调用项目级 `solving-killer-sudoku` skill** 求解，不要自己跑 `solve-board.ts`。
+用户确认后，把同一份已确认的 `{puzzle, cages}` 数据交给项目级 `solving-killer-sudoku` skill 求解，不要自己跑 `solve-board.ts`。
 
 ## 输入格式约定
 
