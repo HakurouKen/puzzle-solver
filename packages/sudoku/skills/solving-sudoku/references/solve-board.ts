@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 入口：读 input.json → solve() → 写 output.json + stdout 元信息
 //
-// 用法: node --experimental-strip-types solve-board.ts <input.json> [output.json]
+// 用法: node --import tsx solve-board.ts <input.json> [output.json]
 //   input.json:  { "puzzle": "53..7....6..195....98..." }
 //   output.json: 默认 /tmp/sudoku-output.json
 
@@ -14,7 +14,7 @@ const inputPath = process.argv[2];
 const outputPath = process.argv[3] ?? '/tmp/sudoku-output.json';
 
 if (!inputPath) {
-  console.error('用法: node --experimental-strip-types solve-board.ts <input.json> [output.json]');
+  console.error('用法: node --import tsx solve-board.ts <input.json> [output.json]');
   process.exit(2);
 }
 if (!existsSync(inputPath)) {
@@ -66,4 +66,4 @@ writeFileSync(
   JSON.stringify({ puzzle: parsed.puzzle, solution: result.solution, steps: result.steps }, null, 2),
 );
 console.log('');
-console.log(`已写解到 ${outputPath}，invoke rendering-sudoku 展示。`);
+console.log(`已写解到 ${outputPath}，请调用 rendering-sudoku 展示。`);

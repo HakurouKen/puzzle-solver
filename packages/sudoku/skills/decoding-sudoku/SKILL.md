@@ -5,7 +5,7 @@ description: Use when user provides a Sudoku puzzle image (or asks to solve one 
 
 # Decoding Sudoku
 
-把用户给的数独谜题图片转成 81 字符字符串的 JSON，**渲染给用户确认**后交棒给 [[solving-sudoku]] 求解。求解本身不属于本 skill。
+把用户给的数独谜题图片转成 9×9 数组 JSON，**渲染给用户确认**后交给项目级 `solving-sudoku` skill 求解。求解本身不属于本 skill。
 
 ## 工作流（必须按顺序）
 
@@ -17,17 +17,17 @@ digraph flow {
     "识图: 读 9×9 网格" [shape=box];
     "生成 9×9 puzzle 二维数组" [shape=box];
     "写 input.json" [shape=box];
-    "invoke rendering-sudoku 显示" [shape=box];
+    "调用 rendering-sudoku 显示" [shape=box];
     "等待用户确认/纠正" [shape=diamond];
-    "invoke solving-sudoku" [shape=box];
+    "调用 solving-sudoku" [shape=box];
     "用户消息" -> "有图片?";
     "有图片?" -> "识图: 读 9×9 网格" [label="是"];
     "有图片?" -> "向用户索要图片" [label="否"];
     "向用户索要图片" -> "用户消息";
     "识图: 读 9×9 网格" -> "生成 9×9 puzzle 二维数组"
-        -> "写 input.json" -> "invoke rendering-sudoku 显示"
+        -> "写 input.json" -> "调用 rendering-sudoku 显示"
         -> "等待用户确认/纠正";
-    "等待用户确认/纠正" -> "invoke solving-sudoku" [label="确认"];
+    "等待用户确认/纠正" -> "调用 solving-sudoku" [label="确认"];
     "等待用户确认/纠正" -> "识图: 读 9×9 网格" [label="纠正"];
 }
 ```
@@ -36,7 +36,7 @@ digraph flow {
 
 ### 1. 接收图片
 
-用户消息中如果**没有图片附件**（消息里看不到 image content block），立即用 AskUserQuestion 索要。不要假设、不要造测试盘。
+用户消息中如果**没有图片附件**，直接向用户索要图片并等待回复。不要假设、不要造测试盘。
 
 ### 2. 识图
 
@@ -77,7 +77,7 @@ JSON
 
 ### 5. 渲染并请求确认
 
-render 由 [[rendering-sudoku]] skill 负责。input.json 中无 solution，rendering 会显示"无解/No solution" — 这是预期（用户用来确认 9×9 识别是否正确，不是看解）。
+render 由项目级 `rendering-sudoku` skill 负责。input.json 无 solution 时，rendering 会按 puzzle 画盘面，空格留空（用户据此确认 9×9 识别是否正确）。
 
 打印后**主动询问用户**："识别如上 9×9 盘面，是否正确？如有错误请指出哪些格的数字错了（例如'行 3 列 4 应为 5 而非 6'）。"等待确认/纠正。
 
@@ -85,7 +85,7 @@ render 由 [[rendering-sudoku]] skill 负责。input.json 中无 solution，rend
 
 ### 6. 交棒给 solving-sudoku
 
-用户确认后，**必须 invoke** [[solving-sudoku]] 求解，不要自己跑 `solve-board.ts` 或心算给答案。
+用户确认后，**必须调用项目级 `solving-sudoku` skill** 求解，不要自己跑 `solve-board.ts` 或心算给答案。
 
 ## 输入格式约定
 
@@ -109,13 +109,13 @@ render 由 [[rendering-sudoku]] skill 负责。input.json 中无 solution，rend
 |------|------|
 | 还没看到图就开始造盘 | 停。先索要图片。 |
 | 看不清的格子瞎猜 | 标 `.` 当空格。 |
-| 渲染看着差不多就 invoke solving | **必须**等用户回话确认。 |
+| 渲染看着差不多就调用 solving | **必须**等用户回话确认。 |
 | 用户指错就自己脑补改 puzzle 重 render | **不可**，回第 2 步重识。 |
-| 自己跑 solve-board.ts | 求解归 solving-sudoku，invoke 它。 |
+| 自己跑 solve-board.ts | 求解归 solving-sudoku，调用该 skill。 |
 
 ## 红旗 — 立即停止
 
 - "图片肯定是 9×9 标准盘" → 不要假设，实际看图
 - "用户没给图我就用一个示例盘" → 索要图片，不要替代
 - "这一格看不太清就猜 5 吧" → 不可，标 `.`
-- "render 出来差不多直接 invoke solving" → **必须**等用户确认
+- "render 出来差不多直接调用 solving" → **必须**等用户确认

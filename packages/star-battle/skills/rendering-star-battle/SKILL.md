@@ -28,15 +28,11 @@ description: Use when a Star Battle puzzle needs to be rendered to the terminal 
 ## 用法
 
 ```bash
-node_modules/.bin/tsx packages/star-battle/skills/rendering-star-battle/references/render-board.ts <json-path>
+node <repo-root>/scripts/ensure-runtime.mjs star-battle
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts <json-path>
 ```
 
-或在已 install 包后于 plugin 内：
-
-```bash
-tsx skills/rendering-star-battle/references/render-board.ts /tmp/sb-input.json
-tsx skills/rendering-star-battle/references/render-board.ts /tmp/sb-output.json
-```
+`<repo-root>`、`<package-root>` 和 `<skill-dir>` 必须解析为真实绝对路径，不依赖当前工作目录。
 
 ## 设计原则
 
@@ -47,8 +43,8 @@ tsx skills/rendering-star-battle/references/render-board.ts /tmp/sb-output.json
 
 ## 与兄弟 skill 的关系
 
-- [[decoding-star-battle]] 写出 input.json 后 invoke 本 skill 让用户确认识别
-- [[solving-star-battle]] 写出 output.json 后 invoke 本 skill 展示带 ★ 的解
+- `decoding-star-battle` 写出 input.json 后调用本 skill 让用户确认识别
+- `solving-star-battle` 写出 output.json 后调用本 skill 展示带 ★ 的解
 - 本 skill **不读** input.json / output.json 之外的状态，**不修改**任何文件
 
 ## 红旗 — 立即停止

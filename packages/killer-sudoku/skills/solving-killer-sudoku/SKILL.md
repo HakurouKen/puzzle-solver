@@ -1,11 +1,11 @@
 ---
 name: solving-killer-sudoku
-description: Use when a Killer Sudoku puzzle (as a 9×9 grid + cages) is already decoded and confirmed by the user, and the puzzle now needs to be solved with step-by-step reasoning. Writes output.json (puzzle + cages + solution + steps), then invokes rendering-killer-sudoku to display the solved board.
+description: Use when a Killer Sudoku puzzle (as a 9×9 grid + cages) is already decoded and confirmed by the user, and the puzzle now needs to be solved with step-by-step reasoning. Writes output.json (puzzle + cages + solution + steps), then uses rendering-killer-sudoku to display the solved board.
 ---
 
 # Solving Killer Sudoku（求解 Killer Sudoku）
 
-入口：一份**已被用户确认**的 `{puzzle, cages}` JSON 数据对象（由 [[decoding-killer-sudoku]] 识图生成并请用户核对过）。CLI 和程序化两种用法都接受同一数据。
+入口：一份**已被用户确认**的 `{puzzle, cages}` JSON 数据对象（由 `decoding-killer-sudoku` 识图生成并请用户核对过）。CLI 和程序化两种用法都接受同一数据。
 
 ## 工作流（必须按顺序）
 
@@ -13,9 +13,9 @@ description: Use when a Killer Sudoku puzzle (as a 9×9 grid + cages) is already
 digraph flow {
     "拿到已确认 {puzzle, cages} 数据" [shape=doublecircle];
     "调 solve → 返回 {solution, steps}" [shape=box];
-    "invoke rendering-killer-sudoku" [shape=box];
+    "调用 rendering-killer-sudoku" [shape=box];
     "拿到已确认 {puzzle, cages} 数据" -> "调 solve → 返回 {solution, steps}"
-        -> "invoke rendering-killer-sudoku";
+        -> "调用 rendering-killer-sudoku";
 }
 ```
 
@@ -25,17 +25,20 @@ digraph flow {
 
 ### 1. 求解
 
-CLI（通过文件路径传输数据）：
+CLI（通过 stdin 传输 JSON 数据）：
 
 ```bash
-# 在 puzzle-solver monorepo 中（dev）：
-node --experimental-strip-types packages/killer-sudoku/skills/solving-killer-sudoku/references/solve-board.ts \
-    /tmp/killer-sudoku-input.json
+node <repo-root>/scripts/ensure-runtime.mjs killer-sudoku
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/solve-board.ts \
+  < /tmp/killer-sudoku-input.json
 
-# 在已安装 plugin 中：
-node --experimental-strip-types skills/solving-killer-sudoku/references/solve-board.ts \
-    /tmp/killer-sudoku-input.json
+# 也可用 heredoc 直接内嵌数据：
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/solve-board.ts <<'JSON'
+{ "puzzle": [...], "cages": [...] }
+JSON
 ```
+
+`<repo-root>`、`<package-root>` 和 `<skill-dir>` 必须解析为真实绝对路径，不依赖当前工作目录。
 
 程序化：
 
@@ -45,7 +48,7 @@ const result = solve({ puzzle, cages })
 // result: { solution: number[][], steps: Step[] } | null
 ```
 
-输入数据 `{puzzle, cages}` 直接传入 `solve()`，文件路径仅是 CLI 的数据传输方式。
+CLI 从 stdin 读 `{puzzle, cages}` JSON 并调 `solve()`；不再接受输入文件路径。可选位置参数：`output.json` 输出路径（默认 `/tmp/killer-sudoku-output.json`）。
 
 `solve-board.ts` 调 `solver.ts` 中的 `solve()`：
 
@@ -79,13 +82,13 @@ const result = solve({ puzzle, cages })
 }
 ```
 
-`solve-board`（CLI 入口）将结果序列化写入 `/tmp/killer-sudoku-output.json`，**不修改**输入文件。
+`solve-board`（CLI 入口）从 stdin 读入并将结果序列化写入 `/tmp/killer-sudoku-output.json`（可通过位置参数覆盖），**不修改**任何输入。
 
 **退出码**：0 = 成功（含无解），1 = 输入错误。
 
 ### 2. 渲染解
 
-不要直跑 render-board，**invoke** [[rendering-killer-sudoku]]，把 `{puzzle, cages, solution}` 数据对象传过去。
+不要直跑 render-board，**调用项目级 `rendering-killer-sudoku` skill**，把 `{puzzle, cages, solution}` 数据对象传过去。
 
 ## 输入格式约定
 
@@ -121,11 +124,11 @@ const result = solve({ puzzle, cages })
 |------|------|
 | 直接对未确认的 puzzle 求解 | puzzle/cages 错求解就废。让 decoding 先识别确认。 |
 | 自己脑补修复 puzzle 或 cages | **不可**。回 decoding 重新生成。 |
-| 自己跑 render-board 显示解 | **不可**。invoke rendering-killer-sudoku。 |
+| 自己跑 render-board 显示解 | **不可**。调用 rendering-killer-sudoku。 |
 | 单格笼 sum 非法（<1 或 >9） | parse 阶段 reject。 |
 
 ## 红旗 — 立即停止
 
 - "用户没确认我先 solve 试试省得来回" → **不可**，那是 decoding 的职责
-- "我顺手 import 一下 rendering 的 render-board.ts" → **不可**，跨 skill 必须 invoke
+- "我顺手 import 一下 rendering 的 render-board.ts" → **不可**，跨 skill 必须调用 skill
 - puzzle 或 cages 验证失败 → 停下来让 decoding 重做，不要自己修

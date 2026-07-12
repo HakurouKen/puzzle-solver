@@ -2,9 +2,16 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { Cage } from '../../solving-killer-sudoku/references/solver.ts';
+
+const DEFAULT_SVG_OUT = '/tmp/killer-sudoku-board.svg';
 
 // ── 类型 ─────────────────────────────────────────────────────────────
+
+/** Killer Sudoku 笼定义（本地冗余，禁止跨 skill references 依赖） */
+interface Cage {
+  cells: number[][];  // [[row, col], ...]
+  sum: number;        // 目标和
+}
 
 interface RenderInput {
   puzzle: number[][];
@@ -308,17 +315,25 @@ export function renderSvg(input: RenderInput): string {
 
 function main(): number {
   const args = process.argv.slice(2);
-  const textMode = args.includes('--text');
-  const positional = args.filter((a) => !a.startsWith('--'));
 
-  if (positional.length === 0) {
-    process.stderr.write('Usage: render-board <input.json> [--text] [-o out.svg]\n');
-    return 1;
+  if (args.includes('--help') || args.includes('-h')) {
+    process.stderr.write(
+      'Usage: render-board [--text] [-o out.svg] < input.json\n' +
+      '  Reads JSON from stdin. Default: writes SVG to ' + DEFAULT_SVG_OUT + '.\n' +
+      '  --text : print terminal board + cages to stdout instead.\n' +
+      '  -o P   : override SVG output path (SVG mode only).\n'
+    );
+    return 0;
   }
 
-  const inputPath = positional[0];
+  const textMode = args.includes('--text');
+
   try {
-    const raw = readFileSync(inputPath, 'utf-8');
+    const raw = readFileSync(0, 'utf-8');
+    if (!raw.trim()) {
+      process.stderr.write('Error: stdin is empty; pipe JSON data in.\n');
+      return 1;
+    }
     const input: RenderInput = JSON.parse(raw);
 
     if (textMode) {
@@ -331,9 +346,7 @@ function main(): number {
     // SVG 渲染（默认）：写文件并报告路径
     const oIdx = args.indexOf('-o');
     const outPath =
-      oIdx >= 0 && args[oIdx + 1]
-        ? args[oIdx + 1]
-        : inputPath.replace(/\.json$/i, '') + '.svg';
+      oIdx >= 0 && args[oIdx + 1] ? args[oIdx + 1] : DEFAULT_SVG_OUT;
     writeFileSync(outPath, renderSvg(input), 'utf-8');
     process.stdout.write(`SVG written to ${outPath}\n`);
     return 0;

@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "pnpm -r test",
+    "check:skills": "node scripts/check-skills.mjs",
+    "runtime:check": "node scripts/ensure-runtime.mjs",
+    "test": "pnpm run check:skills && pnpm -r test",
     "type-check": "pnpm -r type-check",
     "prepare": "husky"
   },

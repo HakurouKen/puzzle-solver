@@ -82,4 +82,4 @@ writeFileSync(
 );
 
 console.log('');
-console.log(`已写解到 ${outputPath}，invoke rendering-star-battle 展示。`);
+console.log(`已写解到 ${outputPath}，请调用 rendering-star-battle 展示。`);

@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const skills = [
+  ["decoding-star-battle", "packages/star-battle/skills/decoding-star-battle"],
+  ["rendering-star-battle", "packages/star-battle/skills/rendering-star-battle"],
+  ["solving-star-battle", "packages/star-battle/skills/solving-star-battle"],
+  ["decoding-sudoku", "packages/sudoku/skills/decoding-sudoku"],
+  ["rendering-sudoku", "packages/sudoku/skills/rendering-sudoku"],
+  ["solving-sudoku", "packages/sudoku/skills/solving-sudoku"],
+  ["decoding-killer-sudoku", "packages/killer-sudoku/skills/decoding-killer-sudoku"],
+  ["rendering-killer-sudoku", "packages/killer-sudoku/skills/rendering-killer-sudoku"],
+  ["solving-killer-sudoku", "packages/killer-sudoku/skills/solving-killer-sudoku"],
+];
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+const claudeLink = join(repoRoot, ".claude/skills");
+assert(lstatSync(claudeLink).isSymbolicLink(), ".claude/skills 必须是相对符号链接");
+assert(
+  realpathSync(claudeLink) === realpathSync(join(repoRoot, ".agents/skills")),
+  ".claude/skills 必须指向 .agents/skills",
+);
+
+for (const [name, expectedRelative] of skills) {
+  const discoveryPath = join(repoRoot, ".agents/skills", name);
+  const expectedPath = join(repoRoot, expectedRelative);
+  assert(lstatSync(discoveryPath).isSymbolicLink(), `${name} 必须通过符号链接发现`);
+  assert(realpathSync(discoveryPath) === realpathSync(expectedPath), `${name} 链接目标错误`);
+
+  const skillText = readFileSync(join(discoveryPath, "SKILL.md"), "utf8");
+  assert(skillText.startsWith("---\n"), `${name}/SKILL.md 缺少 frontmatter`);
+  assert(skillText.includes(`\nname: ${name}\n`), `${name}/SKILL.md 的 name 不匹配`);
+}
+
+console.log(`skills discovery OK: ${skills.length} 个项目级 skills`);

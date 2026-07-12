@@ -30,16 +30,23 @@ description: Use when a Killer Sudoku puzzle or solution needs to be rendered as
 
 ## 用法
 
-CLI（通过文件路径传输数据）：
+CLI（通过 stdin 传输 JSON 数据）：
 
 ```bash
-# 默认渲染 SVG，写到输入 json 同目录（.svg），并打印路径
-node --experimental-strip-types render-board.ts /tmp/killer-sudoku-output.json
+node <repo-root>/scripts/ensure-runtime.mjs killer-sudoku
+# 默认渲染 SVG，写到 /tmp/killer-sudoku-board.svg，并打印路径
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts < /tmp/killer-sudoku-output.json
 # 指定输出路径
-node --experimental-strip-types render-board.ts input.json -o /tmp/board.svg
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts -o /tmp/board.svg < input.json
 # 终端文本渲染（旧行为）
-node --experimental-strip-types render-board.ts input.json --text
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts --text < input.json
+# heredoc 直接内嵌数据
+pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts <<'JSON'
+{ "puzzle": [...], "cages": [...], "solution": [...] }
+JSON
 ```
+
+`<repo-root>`、`<package-root>` 和 `<skill-dir>` 必须解析为真实绝对路径，不依赖当前工作目录。
 
 程序化：
 
@@ -109,8 +116,8 @@ Cages:
 
 ## 与兄弟 skill 的关系
 
-- [[decoding-killer-sudoku]] 写出 input.json 后 invoke 本 skill 让用户确认识别结果
-- [[solving-killer-sudoku]] 写出 output.json 后 invoke 本 skill 展示解
+- `decoding-killer-sudoku` 写出 input.json 后调用本 skill 让用户确认识别结果
+- `solving-killer-sudoku` 写出 output.json 后调用本 skill 展示解
 - 本 skill **不读**传入数据之外的状态，**不修改**任何文件
 
 ## 常见错误
@@ -125,5 +132,5 @@ Cages:
 ## 红旗 — 立即停止
 
 - 输入 JSON 既无 `puzzle` 也无 `solution` → 友好显示 "No solution found"，不要崩溃
-- 尝试自己求解 → 求解归 solving-killer-sudoku，invoke 它
+- 尝试自己求解 → 求解归 solving-killer-sudoku，调用该 skill
 - 尝试识图或修改数据 → 本 skill 只渲染，不修改

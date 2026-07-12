@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-// CLI 入口：读取 JSON 输入，调用求解器，输出 JSON 结果
+// CLI 入口：从 stdin 读取 JSON 数据，调用求解器，输出 JSON 结果
+//
+// 用法:
+//   echo '{"puzzle":[...],"cages":[...]}' | \
+//     node --import tsx solve-board.ts [output.json]
+//
+// output.json 默认 /tmp/killer-sudoku-output.json
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -9,9 +15,9 @@ import { solve } from './solver.ts';
 
 function printUsage() {
   process.stderr.write(`
-Usage: solve-board <input.json>
+Usage: solve-board [output.json] < input.json
 
-Input format:
+Input (stdin, JSON):
 {
   "puzzle": [[0,0,...], ...],  // 9×9, 0 = empty
   "cages": [
@@ -20,8 +26,12 @@ Input format:
   ]
 }
 
-Output: writes result to /tmp/killer-sudoku-output.json
+Output: writes result to output.json (default /tmp/killer-sudoku-output.json)
 `);
+}
+
+function readStdinSync(): string {
+  return readFileSync(0, 'utf-8');
 }
 
 // ── 主逻辑 ───────────────────────────────────────────────────────────
@@ -29,20 +39,25 @@ Output: writes result to /tmp/killer-sudoku-output.json
 function main(): number {
   const args = process.argv.slice(2);
 
-  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+  if (args[0] === '--help' || args[0] === '-h') {
     printUsage();
     return 0;
   }
 
-  const inputPath = args[0];
+  const outputPath = args[0] ?? '/tmp/killer-sudoku-output.json';
 
-  // 读取输入
+  // 读取 stdin
   let input: any;
   try {
-    const raw = readFileSync(inputPath, 'utf-8');
+    const raw = readStdinSync();
+    if (!raw.trim()) {
+      process.stderr.write('Error: stdin is empty; pipe JSON data in.\n');
+      printUsage();
+      return 1;
+    }
     input = JSON.parse(raw);
   } catch (err) {
-    process.stderr.write(`Error reading input: ${(err as Error).message}\n`);
+    process.stderr.write(`Error reading stdin: ${(err as Error).message}\n`);
     return 1;
   }
 
@@ -57,7 +72,6 @@ function main(): number {
     steps: result?.steps ?? [],
   };
 
-  const outputPath = '/tmp/killer-sudoku-output.json';
   writeFileSync(outputPath, JSON.stringify(output, null, 2));
 
   // 打印步骤日志

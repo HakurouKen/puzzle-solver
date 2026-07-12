@@ -1,12 +1,16 @@
 #!/usr/bin/env tsx
-// Render a sudoku solution as an ASCII table to stdout.
+// Render a sudoku board as an ASCII table to stdout.
 //
-// Cell kinds:
-//   - given    (from puzzle)    => " N "  (plain)
-//   - deduced  (propagation)    => "*N "  (asterisk prefix)
-//   - searched (backtracking)   => "(N)"  (brackets)
+// Uniform rendering — same for puzzle (no solution) and solved board:
+//   - filled cell  => " N "
+//   - empty cell   => "   "
+// No reasoning markers; the solver's step log is ignored for visual output.
 //
-// Usage: tsx render-board.ts <output.json>
+// Layout: 3×3 box grid (thick borders) with thin horizontal/vertical
+// separators between cells inside each box, so the printed table is
+// visually closer to a square in a standard terminal.
+//
+// Usage: tsx render-board.ts <json-path>
 
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -28,36 +32,13 @@ interface Output {
   steps?: Step[];
 }
 
-type CellKind = 'given' | 'deduced' | 'searched';
-
-/* ------------------------------------------------------------------ */
-/*  classifySteps — determine each cell's kind from the step log      */
-/* ------------------------------------------------------------------ */
-
-export function classifySteps(steps: Step[]): Map<string, CellKind> {
-  const result = new Map<string, CellKind>();
-  let lastWasSearch = false;
-  for (const s of steps) {
-    if (s.type === 'search') {
-      lastWasSearch = true;
-    } else if (s.type === 'assign') {
-      result.set(s.cell, lastWasSearch ? 'searched' : 'deduced');
-      lastWasSearch = false;
-    }
-  }
-  return result;
-}
-
 /* ------------------------------------------------------------------ */
 /*  formatCell — single cell text (3 chars wide)                      */
 /* ------------------------------------------------------------------ */
 
-export function formatCell(digit: string, kind: CellKind): string {
-  switch (kind) {
-    case 'given':    return ' ' + digit + ' ';   // " N "
-    case 'deduced':  return '*' + digit + ' ';   // "*N "
-    case 'searched': return '(' + digit + ')';   // "(N)"
-  }
+export function formatCell(digit: number): string {
+  if (digit < 1 || digit > 9) return '   ';
+  return ' ' + digit + ' ';
 }
 
 /* ------------------------------------------------------------------ */
@@ -65,67 +46,55 @@ export function formatCell(digit: string, kind: CellKind): string {
 /* ------------------------------------------------------------------ */
 
 export function renderBoard(output: Output): string {
-  if (output.solution === null || output.solution === undefined) {
+  const sol = output.solution ?? null;
+  const puzzle = output.puzzle ?? [];
+
+  if (sol === null && puzzle.length === 0) {
     return 'No solution found.\n';
   }
 
-  const sol = output.solution;
-  const puzzle = output.puzzle ?? [];
-  const givenSet = new Set<string>();
+  // Pick which matrix to display: solution if present, else the puzzle.
+  const grid: number[][] = sol ?? puzzle;
 
-  // Mark cells that were provided in the original puzzle
-  for (let r = 0; r < puzzle.length && r < 9; r++) {
-    const row = puzzle[r];
-    if (!row) continue;
-    for (let c = 0; c < row.length && c < 9; c++) {
-      if (row[c] !== 0) {
-        const rowLabel = String.fromCharCode('A'.charCodeAt(0) + r);
-        const colLabel = String(c + 1);
-        givenSet.add(rowLabel + colLabel);
-      }
-    }
-  }
+  // Each box segment holds 3 cells (3 chars each) separated by thin verticals.
+  // Width = 3 + 1 + 3 + 1 + 3 = 11 characters. The separator chars between
+  // cells differ per row kind so the vertical thin lines stay visually
+  // connected across the horizontal separator rows.
+  const TOP_SEG   = '━━━┯━━━┯━━━';   // thick horizontal, thin vert ticks
+  const BOT_SEG   = '━━━┷━━━┷━━━';
+  const THICK_SEG = '━━━┿━━━┿━━━';   // thick horizontal crossed by thin vert
+  const THIN_SEG  = '───┼───┼───';   // thin horizontal crossed by thin vert
 
-  const classified = classifySteps(output.steps ?? []);
-
-  const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
-  const COLS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
   const lines: string[] = [];
 
-  // Top border
-  lines.push('┌───────┬───────┬───────┐');
+  // Top border (thick)
+  lines.push('┏' + TOP_SEG + '┳' + TOP_SEG + '┳' + TOP_SEG + '┓');
 
   for (let r = 0; r < 9; r++) {
-    // Build the three cell-groups for this row
     const cells: string[] = [];
     for (let c = 0; c < 9; c++) {
-      const cell = ROWS[r] + COLS[c];
-      const kind: CellKind = givenSet.has(cell)
-        ? 'given'
-        : (classified.get(cell) ?? 'deduced');
-      cells.push(formatCell(String(sol[r][c]), kind));
+      const digit = grid[r]?.[c] ?? 0;
+      cells.push(formatCell(digit));
     }
 
-    const line = '│ ' + cells.slice(0, 3).join(' ') + ' │ ' +
-                       cells.slice(3, 6).join(' ') + ' │ ' +
-                       cells.slice(6, 9).join(' ') + ' │';
-    lines.push(line);
+    // Row: thick outer bars, thin inner bars between cells inside each box,
+    // thick bars between boxes.
+    const box = (i: number) =>
+      cells[i * 3] + '│' + cells[i * 3 + 1] + '│' + cells[i * 3 + 2];
+    lines.push('┃' + box(0) + '┃' + box(1) + '┃' + box(2) + '┃');
 
-    // Thick box-separator after rows 2 and 5 (i.e. after the 3rd and 6th rows)
+    if (r === 8) continue;
     if (r === 2 || r === 5) {
-      lines.push('├───────┼───────┼───────┤');
-    } else if (r < 8) {
-      // Lighter row separator between rows within a box
-      lines.push('│───────│───────│───────│');
+      // Thick mid-separator between 3×3 boxes
+      lines.push('┣' + THICK_SEG + '╋' + THICK_SEG + '╋' + THICK_SEG + '┫');
+    } else {
+      // Thin separator between cell rows inside a box
+      lines.push('┠' + THIN_SEG + '╂' + THIN_SEG + '╂' + THIN_SEG + '┨');
     }
   }
 
-  // Bottom border
-  lines.push('└───────┴───────┴───────┘');
-
-  // Legend
-  lines.push('');
-  lines.push('图例: 原题=空  推理=*N  搜索=(N)');
+  // Bottom border (thick)
+  lines.push('┗' + BOT_SEG + '┻' + BOT_SEG + '┻' + BOT_SEG + '┛');
 
   return lines.join('\n') + '\n';
 }
@@ -138,7 +107,7 @@ const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMain) {
   const filePath = process.argv[2];
   if (!filePath) {
-    console.error('用法: tsx render-board.ts <output.json>');
+    console.error('用法: tsx render-board.ts <json-path>');
     process.exit(2);
   }
   if (!existsSync(filePath)) {

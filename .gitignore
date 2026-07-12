@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+.venv/
 
 # Build output
 dist/
@@ -33,7 +34,7 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# Claude / Superpowers
+# Claude local state
 .superpowers/
 .claude/superpowers
 .claude/settings.local.json
