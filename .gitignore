@@ -34,8 +34,10 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# Claude local state
+# Claude/Codex local state
 .superpowers/
-.claude/superpowers
+docs/superpowers/
+.codex/superpowers/
+.claude/superpowers/
 .claude/settings.local.json
 .claude/worktrees/

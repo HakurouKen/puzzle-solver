@@ -14,6 +14,15 @@
 
 **不修改**：references/*.ts 实现代码（已为中文注释）。
 
+## 追加：rendering SVG 增强（2026-06-23）
+
+中文重写完成后，`rendering-killer-sudoku` 追加了 **SVG 图像渲染** 能力（修改了 `references/render-board.ts` 及其测试）：
+
+- 新增 `renderSvg()`：默认输出 SVG，复刻参考图样式——内缩虚线笼框、嵌入笼框左上角缺口的小字 sum、粗线分宫
+- CLI 默认写 SVG 文件并报路径，`-o` 指定路径，`--text` 切回终端文本
+- 终端文本渲染同步升级为「双行格」（sum 行 + 数字行）+ 三种线型（粗/虚/细）
+- 详见下方 `rendering-killer-sudoku` 章节
+
 ## 结构约定（对齐 sudoku package）
 
 每个 SKILL.md 必须包含：
@@ -316,7 +325,7 @@ solve-board（CLI 入口）将结果序列化写入 `/tmp/killer-sudoku-output.j
 
 ```yaml
 name: rendering-killer-sudoku
-description: Use when a Killer Sudoku solution needs to be rendered to the terminal. Invoked by sibling skills decoding-killer-sudoku and solving-killer-sudoku.
+description: Use when a Killer Sudoku puzzle or solution needs to be rendered as an image (SVG) or terminal text. Invoked by sibling skills decoding-killer-sudoku and solving-killer-sudoku.
 ```
 
 ### 标题
@@ -325,7 +334,7 @@ description: Use when a Killer Sudoku solution needs to be rendered to the termi
 
 ### 简介
 
-把 `{puzzle, cages, solution?}` 数据渲染成终端 Unicode 棋盘 + 笼列表。职责单一：接收数据、画棋盘和笼边界。不识图、不求解。
+把 `{puzzle, cages, solution?}` 数据渲染成图像或文本。**默认输出 SVG**——精确复刻 Killer Sudoku 图形样式：内缩虚线笼框、嵌入左上角的小字 sum、粗线分宫；同时保留终端 Unicode 文本输出（`--text`）。职责单一：接收数据、画棋盘和笼边界。不识图、不求解。
 
 ### 输入
 
@@ -352,28 +361,49 @@ description: Use when a Killer Sudoku solution needs to be rendered to the termi
 
 CLI（通过文件路径传输数据）：
 ```bash
+# 默认渲染 SVG，写到输入 json 同目录（.svg），并打印路径
 node --experimental-strip-types render-board.ts /tmp/killer-sudoku-output.json
+# 指定输出路径
+node --experimental-strip-types render-board.ts input.json -o /tmp/board.svg
+# 终端文本渲染（旧行为）
+node --experimental-strip-types render-board.ts input.json --text
 ```
 
 程序化：
 ```ts
-import { renderBoard, renderCages } from './render-board.ts'
-const board = renderBoard({ puzzle, cages, solution })
-const cageList = renderCages({ puzzle, cages })
+import { renderSvg, renderBoard, renderCages } from './render-board.ts'
+const svg = renderSvg({ puzzle, cages, solution })   // SVG 字符串
+const board = renderBoard({ puzzle, cages, solution })// 终端文本
+const cageList = renderCages({ puzzle, cages })       // 笼列表文本
 ```
+
+macOS 下可用 `qlmanage -t -s 580 -o <dir> board.svg` 把 SVG 转成 PNG 预览。
 
 ### 输出格式
 
-棋盘（Unicode 盒线）：
+#### SVG（默认）
+
+矢量绘制，纯字符串拼接、无外部依赖：
+
+- **内缩虚线笼框**：笼边界向格内偏移 `PAD` 像素绘制，浮在格子内部、比实线网格小一圈，两者分层互不重叠
+- **嵌入式 sum**：sum 小字移到笼框左上角点，笼框 top 边右移、left 边下移留出缺口，数字嵌在虚线断口处、与虚线重叠（复刻参考图）。缺口宽度随 sum 位数自适应
+- **数字**：格子居中
+- **粗线**（width 3）：3×3 宫边界 + 外框；**细线**（width 1）：单格网格
+- 配色 `#344861`（深）/ `#cdd5e0`（浅网格）/ `#5b6b84`（虚线笼框）
+
+#### 终端文本（--text）
+
+每格占 **2 行 × 5 字符**：上行左上角放笼 sum（仅锚点格），下行居中放数字。
 ```
-┏━━━┯━━━┯━━━┳━━━┯━━━┯━━━┳━━━┯━━━┯━━━┓
-┃ 1 │ 2 │ 3 ┃ 4 │ 5 │ 6 ┃ 7 │ 8 │ 9 ┃
-┃───┼───┼───╂───┼───┼───╂───┼───┼───┃
+┏━━━━━┯━━━━━┯━━━━━┳━━━━━┯ ...
+┃16   ╎18   │     ┃11   ╎ ...   ← sum 行（左上角小字）
+┃  9  ╎  6  │  4  ┃  2  ╎ ...   ← 数字行（居中）
+┠─────┼─────┼╌╌╌╌╌╂╌╌╌╌╌┼ ...   ← 行间分隔
 ...
-┗━━━┷━━━┷━━━┻━━━┷━━━┷━━━┻━━━┷━━━┷━━━┛
+┗━━━━━┷━━━━━┷━━━━━┻━━━━━┷ ...
 ```
 
-笼列表：
+笼列表（`renderCages`）：
 ```
 Cages:
   Cage 0: A1,A2 (2 cells, sum=3)
@@ -383,14 +413,23 @@ Cages:
 
 ### 边框约定
 
-- **宫粗线**（3×3 box）：`━ ┃ ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋` — 标准 3×3 宫分隔
-- **笼边界**：相邻两格属于不同笼时，在分隔线加粗（`┯ ┷ ┿` 替代 `─ │`）
-- **重合**：笼边界与宫边界重合时使用混合字符（`┳ ┻ ╋` 替代 `┯ ┷ ┿`）
-- **格宽**：3 字符（1 数字 + 2 填充空格），空格显示 `   `
+**SVG**：实线网格（细线单格 / 粗线分宫）与内缩虚线笼框分层绘制，互不重叠；sum 嵌在笼框左上角缺口。
+
+**终端文本（--text）**：
+- **粗线**（━ ┃ ┏ ┓ ┳ ┻ ┣ ┫）：3×3 宫边界
+- **虚线**（╌ ╎）：笼边界
+- **细线**（─ │）：同一笼内部相邻格之间
+- **交叉点**（┼ ╂ ┿ ╋）：粗细只取决于是否落在宫行/列上
+
+### 锚点格约定
+
+笼的 sum 标注在「锚点格」——即该笼中行列字典序最小（最左上）的格子。SVG 嵌在其笼框左上角，终端文本放其格左上角。
 
 ### 设计原则
 
-- 纯 Unicode，无 ANSI 颜色（终端调色板差异会误导）
+- 默认 SVG 输出：矢量绘制、纯字符串拼接、无外部依赖（与 sudoku/star-battle 一致的"无 native 库"原则）
+- SVG 用分层绘制实现"内缩虚线笼框 + 嵌入式 sum"，复刻 Killer Sudoku 图形样式
+- 终端文本（--text）纯 Unicode、无 ANSI 颜色（终端调色板差异会误导）
 - 笼列表用标准坐标 A1-I9（A=第 0 行，1=第 0 列）
 
 ### 与兄弟 skill 的关系
