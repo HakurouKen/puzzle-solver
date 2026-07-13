@@ -303,8 +303,13 @@ export function solve(input: NonogramPuzzle, options: SolveOptions = {}): SolveR
       });
       const before = solutions.length;
       explore(child);
-      if (solutions.length === before) recorder.push({ type: 'backtrack', detail: '当前假设不能产生完整解，回溯' });
       if (solutions.length >= 2 || counters.limitReached) return;
+      recorder.push({
+        type: 'backtrack',
+        detail: solutions.length === before
+          ? '当前假设不能产生完整解，回溯'
+          : '已找到一组解，回溯检查其他分支',
+      });
     }
   };
 

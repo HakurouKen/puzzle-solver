@@ -29,6 +29,44 @@ function assertInput(input: RenderInput): void {
   if (!Array.isArray(input.rowClues) || !Array.isArray(input.columnClues)) {
     throw new Error('rowClues 和 columnClues 必须是二维数组');
   }
+  const height = input.rowClues.length;
+  const width = input.columnClues.length;
+  if (height < 1 || width < 1) throw new Error('棋盘尺寸必须为正数');
+  if (height > 100 || width > 100 || height * width > 10_000) {
+    throw new Error('棋盘每边最多 100 格且总格数最多 10000');
+  }
+  const validateClues = (lines: number[][], lineLength: number, name: string): void => {
+    lines.forEach((clues, index) => {
+      if (!Array.isArray(clues) || clues.some((clue) => !Number.isInteger(clue) || clue <= 0)) {
+        throw new Error(`${name} ${index + 1} 的 clue 必须都是正整数`);
+      }
+      const required = clues.reduce((sum, clue) => sum + clue, 0) + Math.max(0, clues.length - 1);
+      if (required > lineLength) throw new Error(`${name} ${index + 1} 的 clues 超出线长`);
+    });
+  };
+  validateClues(input.rowClues, width, '行');
+  validateClues(input.columnClues, height, '列');
+
+  const validateBoard = (name: string, board: CellState[][] | undefined | null, allowed: readonly CellState[]): void => {
+    if (board === undefined || board === null) return;
+    if (
+      !Array.isArray(board)
+      || board.length !== height
+      || board.some((row) =>
+        !Array.isArray(row)
+        || row.length !== width
+        || row.some((cell) => !allowed.includes(cell)))
+    ) {
+      throw new Error(`${name} 必须是与 clues 同尺寸的合法格值矩阵`);
+    }
+  };
+  validateBoard('solution', input.solution, [0, 1]);
+  validateBoard('alternateSolution', input.alternateSolution, [0, 1]);
+  validateBoard('partial', input.partial, [-1, 0, 1]);
+  if (input.status === 'solved' && !input.solution) throw new Error('solved 状态必须包含 solution');
+  if (input.status === 'multiple' && (!input.solution || !input.alternateSolution)) {
+    throw new Error('multiple 状态必须包含 solution 和 alternateSolution');
+  }
 }
 
 function emptyBoard(input: RenderInput): CellState[][] {
@@ -121,7 +159,11 @@ function svgEscape(text: string): string {
 }
 
 const CELL = 24;
-const ROW_CLUE_WIDTH = 120;
+
+const rowClueWidth = (input: RenderInput): number => Math.max(
+  120,
+  ...input.rowClues.map((clues) => clues.join(' ').length * 8 + 16),
+);
 
 function svgBoard(
   input: RenderInput,
@@ -133,9 +175,10 @@ function svgBoard(
 ): string[] {
   const width = input.columnClues.length;
   const height = input.rowClues.length;
+  const clueWidth = rowClueWidth(input);
   const maxColumnDepth = Math.max(0, ...input.columnClues.map((clues) => clues.length));
   const clueHeight = Math.max(36, maxColumnDepth * 18 + 12);
-  const gridX = originX + ROW_CLUE_WIDTH;
+  const gridX = originX + clueWidth;
   const gridY = originY + clueHeight;
   const parts = [
     `<text x="${originX}" y="${originY + 16}" font-size="16" font-weight="700">${svgEscape(title)}</text>`,
@@ -184,7 +227,7 @@ export function renderSvg(input: RenderInput): string {
   assertInput(input);
   const multiple = input.status === 'multiple' && input.solution && input.alternateSolution;
   const maxColumnDepth = Math.max(0, ...input.columnClues.map((clues) => clues.length));
-  const boardWidth = ROW_CLUE_WIDTH + input.columnClues.length * CELL;
+  const boardWidth = rowClueWidth(input) + input.columnClues.length * CELL;
   const boardHeight = Math.max(36, maxColumnDepth * 18 + 12) + input.rowClues.length * CELL;
   const width = multiple ? boardWidth * 2 + 48 : boardWidth + 24;
   const height = boardHeight + 72;
@@ -207,12 +250,11 @@ export function renderSvg(input: RenderInput): string {
 }
 
 export function chooseFormat(input: RenderInput, requested: RenderFormat = 'auto'): Exclude<RenderFormat, 'auto'> {
+  assertInput(input);
   if (requested !== 'auto') return requested;
-  const maxRowClueWidth = Math.max(2, ...input.rowClues.map((clues) => clueText(clues).length));
-  const maxColumnDepth = Math.max(0, ...input.columnClues.map((clues) => clues.length));
-  const estimatedWidth = maxRowClueWidth + 7 + input.columnClues.length * 2;
-  const estimatedHeight = input.rowClues.length + input.columnClues.length + maxColumnDepth + 8;
-  return estimatedWidth <= 120 && estimatedHeight <= 60 ? 'terminal' : 'svg';
+  const lines = renderTerminal(input).trimEnd().split('\n');
+  const withinWidth = lines.every((line) => [...line].length <= 120);
+  return withinWidth && lines.length <= 60 ? 'terminal' : 'svg';
 }
 
 function parseCli(args: string[]): { inputPath?: string; outputPath?: string; format: RenderFormat } {

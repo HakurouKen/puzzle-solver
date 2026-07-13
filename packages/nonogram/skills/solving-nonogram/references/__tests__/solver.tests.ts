@@ -10,6 +10,31 @@ test('analyzeLine: clue [3] 在长度 5 的空线上确定中心格', () => {
   });
 });
 
+test('analyzeLine: 空 clue 将整条线确定为白格', () => {
+  assert.deepEqual(analyzeLine(3, [], [-1, -1, -1]), {
+    feasible: true,
+    canBeFilled: [false, false, false],
+    canBeEmpty: [true, true, true],
+  });
+});
+
+test('analyzeLine: 全长 clue 将整条线确定为黑格', () => {
+  assert.deepEqual(analyzeLine(3, [3], [-1, -1, -1]), {
+    feasible: true,
+    canBeFilled: [true, true, true],
+    canBeEmpty: [false, false, false],
+  });
+});
+
+test('analyzeLine: 尊重已有格约束并识别矛盾', () => {
+  assert.deepEqual(analyzeLine(3, [1], [1, -1, -1]), {
+    feasible: true,
+    canBeFilled: [true, false, false],
+    canBeEmpty: [false, true, true],
+  });
+  assert.equal(analyzeLine(3, [3], [-1, 0, -1]).feasible, false);
+});
+
 test('solve: 返回 5×5 十字题的唯一解', () => {
   const clues = [[1], [3], [5], [3], [1]];
   const result = solve({ rowClues: clues, columnClues: clues });
@@ -37,6 +62,14 @@ test('solve: 返回两组见证解证明题目多解', () => {
   assert.ok(result.solution);
   assert.ok(result.alternateSolution);
   assert.notDeepEqual(result.solution, result.alternateSolution);
+  const assumptions = result.steps
+    .map((step, index) => ({ step, index }))
+    .filter(({ step }) => step.type === 'assumption');
+  assert.ok(
+    result.steps.slice(assumptions[0].index + 1, assumptions[1].index)
+      .some((step) => step.type === 'backtrack'),
+    '检查第二个分支前应明确记录从首解回溯',
+  );
 });
 
 test('solve: 矛盾线索返回 unsatisfiable', () => {

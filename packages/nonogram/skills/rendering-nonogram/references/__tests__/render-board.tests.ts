@@ -33,6 +33,22 @@ test('renderSvg: 生成带三态格和 clues 的 SVG', () => {
   assert.match(output, />1<\/text>/);
 });
 
+test('renderTerminal: 空题面与唯一解均有明确视觉状态', () => {
+  const empty = renderTerminal({ rowClues: [[1]], columnClues: [[1]] });
+  assert.match(empty, /┏/);
+  assert.match(empty, /┃  ┃/);
+  assert.doesNotMatch(empty, /██/);
+
+  const solved = renderTerminal({
+    rowClues: [[1]],
+    columnClues: [[1]],
+    status: 'solved',
+    solution: [[1]],
+  });
+  assert.match(solved, /唯一解/);
+  assert.match(solved, /██/);
+});
+
 test('renderTerminal: 多解时显示两组解和差异坐标', () => {
   const output = renderTerminal({
     ...PARTIAL_INPUT,
@@ -46,10 +62,43 @@ test('renderTerminal: 多解时显示两组解和差异坐标', () => {
   assert.match(output, /差异格.*\(1,1\)/s);
 });
 
+test('renderSvg: 多解并排显示并用红框标出差异', () => {
+  const output = renderSvg({
+    ...PARTIAL_INPUT,
+    status: 'multiple',
+    solution: [[1, 0], [0, 1]],
+    alternateSolution: [[0, 1], [1, 0]],
+  });
+
+  assert.match(output, />解 A<\/text>/);
+  assert.match(output, />解 B<\/text>/);
+  assert.match(output, /stroke="#dc2626"/);
+});
+
 test('chooseFormat: 超过 60 行的布局自动选择 SVG', () => {
   const clues = Array.from({ length: 40 }, () => [] as number[]);
   assert.equal(chooseFormat({ rowClues: clues, columnClues: clues }, 'auto'), 'svg');
   assert.equal(chooseFormat({ rowClues: clues, columnClues: clues }, 'terminal'), 'terminal');
+});
+
+test('chooseFormat: 30×1 的实际终端输出超过 60 行时选择 SVG', () => {
+  const input = {
+    rowClues: Array.from({ length: 30 }, () => [] as number[]),
+    columnClues: [[]],
+  };
+  assert.ok(renderTerminal(input).trimEnd().split('\n').length > 60);
+  assert.equal(chooseFormat(input, 'auto'), 'svg');
+});
+
+test('renderer: 拒绝非法格值以及缺少第二解的 multiple 输入', () => {
+  assert.throws(
+    () => renderTerminal({ ...PARTIAL_INPUT, partial: [[2]] as unknown as (-1 | 0 | 1)[][] }),
+    /partial/,
+  );
+  assert.throws(
+    () => renderSvg({ ...PARTIAL_INPUT, status: 'multiple', solution: [[1, 0], [0, 1]] }),
+    /alternateSolution/,
+  );
 });
 
 test('render-board CLI: stdin 输入、SVG 写 stdout、诊断写 stderr', () => {
