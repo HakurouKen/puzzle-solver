@@ -1,0 +1,57 @@
+---
+name: decoding-nonogram
+description: Use when a user provides an image, screenshot, scan, photo, or visual depiction of a black-and-white Nonogram and its row and column clues need to be decoded by the model, rendered, and confirmed before solving.
+---
+
+# Decoding Nonogram（解码数织）
+
+把用户提供的黑白 Nonogram 视觉输入识别为 `{rowClues, columnClues}`，调用项目级 `rendering-nonogram` 生成规范化确认视图；只有用户明确确认后，才交给 `solving-nonogram`。本 skill 不求解。
+
+## 强制工作流
+
+1. 没有图片或其他可读视觉输入时，向用户索要并等待；不要造测试题。
+2. 一次只处理一道题。多张附件可以共同描述同一道题；一张图有多题时，先让用户指定目标。
+3. **完全使用模型视觉能力识别**棋盘尺寸、逐行 clues、逐列 clues。不要运行 OCR、OpenCV、网格切割或专用 clue 提取脚本。
+4. 截图中已有的涂黑、叉号或其他作答痕迹不是题目条件，全部忽略；线索是唯一权威输入。
+5. 生成并校验 `{rowClues, columnClues}`。
+6. 输出尺寸以及带 1-based 编号的完整行、列 clue 清单，并调用 `rendering-nonogram` 显示空白题面。
+7. 主动询问用户识别是否正确，等待明确确认或纠正。确认前禁止调用 solving。
+8. 用户给出明确值时定点修正、重新校验并重新渲染；只说“这里不对”时才重点重新识图。禁止用可解性反推或猜测 clue。
+9. 确认后，把同一份数据交给项目级 `solving-nonogram`。
+
+## 输入数据契约
+
+```json
+{
+  "rowClues": [[1], [3], [5], [3], [1]],
+  "columnClues": [[1], [3], [5], [3], [1]]
+}
+```
+
+- 高度由 `rowClues.length` 推导，宽度由 `columnClues.length` 推导；不添加冗余尺寸字段。
+- 每条 clue 只含正整数，顺序与图中一致：行从左到右，列从上到下。
+- 没有黑格的线统一写 `[]`；图片中的 `0` 需规范化为 `[]`。
+- 不允许把 `null`、问号或其他未知占位交给 solving。
+- 每边最多 100 格，且总格数最多 10,000。
+- 每条线必须满足 `sum(clues) + clues.length - 1 <= lineLength`；空 clue 的需求长度为 0。
+
+## 模糊输入
+
+任何数字不清楚时，指出具体位置，例如“第 7 行第 2 个 clue 无法确认”，请用户补充或提供清晰图片。不要：
+
+- 根据常见题型补默认数字；
+- 根据对称性猜 clue；
+- 先求解再选择能得到解的读法；
+- 把用户已有作答当作反推依据。
+
+## 确认用语
+
+渲染后询问：“识别为以上 `高×宽` 数织及行列线索，是否正确？如有错误，请指出具体行或列及正确 clue，例如‘第 8 行应为 `[2, 4]`’。”
+
+## 红旗
+
+- 没有视觉输入却开始生成 clues。
+- 为不同图片样式调用识图脚本。
+- 未逐项展示 clues 或未等用户确认便开始求解。
+- 用户纠正一处后悄悄改动其他 clues。
+- 用 solver 修复识别结果。

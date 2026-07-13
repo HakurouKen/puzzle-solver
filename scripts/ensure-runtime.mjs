@@ -20,6 +20,10 @@ const packages = {
     nodeDependencies: ["tsx"],
     pythonDependency: "Pillow",
   },
+  nonogram: {
+    root: join(repoRoot, "packages/nonogram"),
+    nodeDependencies: ["tsx"],
+  },
 };
 
 function fail(message) {

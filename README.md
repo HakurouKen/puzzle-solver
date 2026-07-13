@@ -11,6 +11,7 @@
 | [`star-battle`](./packages/star-battle)      | Star Battle：识别区域矩阵与 k 值，渲染棋盘，按策略分步求解           |
 | [`sudoku`](./packages/sudoku)                | 数独：识别 9×9 网格，终端渲染，分步求解                              |
 | [`killer-sudoku`](./packages/killer-sudoku)  | 杀手数独：识别网格 + cage，渲染 cage 边界与 SVG，约束传播 + 分步求解 |
+| [`nonogram`](./packages/nonogram)            | 数织：模型识别任意矩形黑白线索，终端/SVG 渲染，DP 传播并判定唯一性   |
 
 每个 package 提供三个 skills：
 
@@ -24,7 +25,7 @@
 
 用 Codex 或 Claude Code 打开本仓库：
 
-- Codex 从 [`.agents/skills`](./.agents/skills) 发现 9 个项目级 skills。
+- Codex 从 [`.agents/skills`](./.agents/skills) 发现 12 个项目级 skills。
 - Claude Code 通过 [`.claude/skills`](./.claude/skills) 读取同一组 skills。
 - 两个入口都是指向 `packages/*/skills/*` 的仓库内相对符号链接，仅支持 macOS/Linux。
 

@@ -15,6 +15,9 @@ const skills = [
   ["decoding-killer-sudoku", "packages/killer-sudoku/skills/decoding-killer-sudoku"],
   ["rendering-killer-sudoku", "packages/killer-sudoku/skills/rendering-killer-sudoku"],
   ["solving-killer-sudoku", "packages/killer-sudoku/skills/solving-killer-sudoku"],
+  ["decoding-nonogram", "packages/nonogram/skills/decoding-nonogram"],
+  ["rendering-nonogram", "packages/nonogram/skills/rendering-nonogram"],
+  ["solving-nonogram", "packages/nonogram/skills/solving-nonogram"],
 ];
 
 function assert(condition, message) {

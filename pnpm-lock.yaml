@@ -24,6 +24,18 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/nonogram:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.0.0
+      tsx:
+        specifier: 4.23.0
+        version: 4.23.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/star-battle:
     dependencies:
       sharp:
