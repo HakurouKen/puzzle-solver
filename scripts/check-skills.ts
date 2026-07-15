@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,9 +18,9 @@ const skills = [
   ["decoding-nonogram", "packages/nonogram/skills/decoding-nonogram"],
   ["rendering-nonogram", "packages/nonogram/skills/rendering-nonogram"],
   ["solving-nonogram", "packages/nonogram/skills/solving-nonogram"],
-];
+] as const;
 
-function assert(condition, message) {
+function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 

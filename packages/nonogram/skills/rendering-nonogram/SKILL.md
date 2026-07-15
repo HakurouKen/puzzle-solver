@@ -10,7 +10,7 @@ description: Use when a black-and-white Nonogram puzzle, partial board, unique s
 ## 用法
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs nonogram
+pnpm --dir <repo-root> run runtime:check -- nonogram
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts \
   [input.json] [--format auto|terminal|svg] [--output path]
 ```

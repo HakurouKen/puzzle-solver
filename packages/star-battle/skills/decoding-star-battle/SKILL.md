@@ -58,7 +58,7 @@ digraph flow {
 先把 `<repo-root>`、`<package-root>` 和 `<skill-dir>` 解析为真实绝对路径；即使 skill 是从 `.agents/skills` 或 `.claude/skills` 的符号链接发现，也要使用其真实目录。首次运行会自动在项目内安装锁定依赖：
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs star-battle
+pnpm --dir <repo-root> run runtime:check -- star-battle
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/extract-cells.ts \
     "$IMG" --rect x,y,w,h --n N \
     > /tmp/sb-features.json

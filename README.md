@@ -29,7 +29,7 @@
 - Claude Code 通过 [`.claude/skills`](./.claude/skills) 读取同一组 skills。
 - 两个入口都是指向 `packages/*/skills/*` 的仓库内相对符号链接，仅支持 macOS/Linux。
 
-首次执行某类谜题时，skill 会调用 `scripts/ensure-runtime.mjs`。它只在依赖缺失或版本不匹配时运行锁定安装：Node 依赖进入项目 `node_modules/`，Pillow 由 uv 安装到 `packages/killer-sudoku/.venv/`。
+首次执行某类谜题时，skill 会调用 `scripts/ensure-runtime.ts`。它只在依赖缺失或版本不匹配时运行锁定安装：Node 依赖进入项目 `node_modules/`，Pillow 由 uv 安装到 `packages/killer-sudoku/.venv/`。
 
 典型对话流程：
 
@@ -46,8 +46,9 @@
 pnpm install --frozen-lockfile                       # 安装 workspace Node 依赖
 uv sync --project packages/killer-sudoku --frozen   # 安装项目隔离的 Pillow
 pnpm test                                             # 检查 skill 入口并运行全部测试
-pnpm type-check                                      # 递归类型检查
-node scripts/ensure-runtime.mjs                      # 检查全部运行环境
+pnpm type-check                                      # 根脚本 + 子包类型检查
+pnpm run runtime:check                               # 检查全部运行环境
+pnpm run docs:diagrams                               # 重新生成策略文档 SVG 示意图
 ```
 
 约定：

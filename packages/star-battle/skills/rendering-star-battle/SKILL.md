@@ -28,7 +28,7 @@ description: Use when Star Battle puzzle data needs to be rendered to the termin
 ## 用法
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs star-battle
+pnpm --dir <repo-root> run runtime:check -- star-battle
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts <json-path>
 ```
 

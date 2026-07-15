@@ -48,7 +48,7 @@ digraph flow {
 跑脚本，一次拿到 33 个 sum 拼图 + 9×9 数字拼图 + 笼分组骨架：
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs killer-sudoku
+pnpm --dir <repo-root> run runtime:check -- killer-sudoku
 <package-root>/.venv/bin/python <skill-dir>/references/decode-image.py <image_path> --outdir /tmp/ks-decode
 ```
 

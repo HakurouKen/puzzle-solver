@@ -26,7 +26,7 @@ digraph flow {
 ### 1. 求解
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs sudoku
+pnpm --dir <repo-root> run runtime:check -- sudoku
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/solve-board.ts path/to/input.json
 # 如需持久化，再显式传入调用方选择的输出路径：
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/solve-board.ts path/to/input.json path/to/output.json

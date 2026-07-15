@@ -33,7 +33,7 @@ description: Use when a Killer Sudoku puzzle or solution needs to be rendered as
 CLI（通过 stdin 传输 JSON 数据）：
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs killer-sudoku
+pnpm --dir <repo-root> run runtime:check -- killer-sudoku
 # 指定输出路径
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-board.ts -o "$BOARD_SVG" < "$DATA_JSON"
 # 终端文本渲染（旧行为）

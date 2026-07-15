@@ -3,13 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check:skills": "node scripts/check-skills.mjs",
-    "runtime:check": "node scripts/ensure-runtime.mjs",
+    "check:skills": "tsx scripts/check-skills.ts",
+    "docs:diagrams": "tsx scripts/generate-strategy-diagrams.ts",
+    "runtime:check": "tsx scripts/ensure-runtime.ts",
     "test": "pnpm run check:skills && pnpm -r test",
-    "type-check": "pnpm -r type-check",
+    "type-check": "tsc --noEmit -p tsconfig.scripts.json && pnpm -r type-check",
     "prepare": "husky"
   },
   "devDependencies": {
-    "husky": "^9.1.7"
+    "@types/node": "^26.0.0",
+    "husky": "^9.1.7",
+    "tsx": "4.23.0",
+    "typescript": "^6.0.3"
   }
 }

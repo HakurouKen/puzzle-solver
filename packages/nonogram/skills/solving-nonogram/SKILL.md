@@ -12,7 +12,7 @@ description: Use when a black-and-white Nonogram's rowClues and columnClues have
 先解析真实绝对路径，再运行：
 
 ```bash
-node <repo-root>/scripts/ensure-runtime.mjs nonogram
+pnpm --dir <repo-root> run runtime:check -- nonogram
 pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/solve-board.ts [input.json] [output.json] \
   [--max-search-nodes 100000] [--max-steps 10000]
 ```

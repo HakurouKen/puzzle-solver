@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -6,7 +6,19 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const packages = {
+interface PackageConfig {
+  root: string;
+  nodeDependencies: string[];
+  pythonDependency?: string;
+}
+
+interface PackageManifest {
+  version?: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
+const packages: Record<string, PackageConfig> = {
   "star-battle": {
     root: join(repoRoot, "packages/star-battle"),
     nodeDependencies: ["tsx", "sharp"],
@@ -26,18 +38,19 @@ const packages = {
   },
 };
 
-function fail(message) {
+function fail(message: string): never {
   console.error(`运行环境初始化失败：${message}`);
   process.exit(1);
 }
 
-function run(command, args, cwd = repoRoot, capture = false) {
+function run(command: string, args: string[], cwd = repoRoot, capture = false): string {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
     stdio: capture ? "pipe" : "inherit",
   });
-  if (result.error?.code === "ENOENT") {
+  const spawnError = result.error as NodeJS.ErrnoException | undefined;
+  if (spawnError?.code === "ENOENT") {
     fail(`缺少系统前置命令 ${command}，请先安装后重试。`);
   }
   if (result.status !== 0) {
@@ -47,42 +60,42 @@ function run(command, args, cwd = repoRoot, capture = false) {
   return capture ? result.stdout.trim() : "";
 }
 
-function packageJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
+function packageJson(path: string): PackageManifest {
+  return JSON.parse(readFileSync(path, "utf8")) as PackageManifest;
 }
 
-function expectedNodeVersion(packageRoot, dependency) {
+function expectedNodeVersion(packageRoot: string, dependency: string): string | undefined {
   const manifest = packageJson(join(packageRoot, "package.json"));
   return manifest.dependencies?.[dependency] ?? manifest.devDependencies?.[dependency];
 }
 
-function installedNodeVersion(packageRoot, dependency) {
+function installedNodeVersion(packageRoot: string, dependency: string): string | null {
   const manifestPath = join(packageRoot, "node_modules", dependency, "package.json");
   if (!existsSync(manifestPath)) return null;
-  return packageJson(manifestPath).version;
+  return packageJson(manifestPath).version ?? null;
 }
 
-function nodeRuntimeReady(config) {
+function nodeRuntimeReady(config: PackageConfig): boolean {
   return config.nodeDependencies.every(
     (dependency) =>
       installedNodeVersion(config.root, dependency) === expectedNodeVersion(config.root, dependency),
   );
 }
 
-function ensureNodeRuntime(config) {
+function ensureNodeRuntime(config: PackageConfig): void {
   if (nodeRuntimeReady(config)) return;
   run("pnpm", ["install", "--frozen-lockfile"]);
   if (!nodeRuntimeReady(config)) fail("pnpm 安装完成，但局部 Node 依赖版本仍不匹配。");
 }
 
-function expectedPillowVersion(packageRoot) {
+function expectedPillowVersion(packageRoot: string): string {
   const pyproject = readFileSync(join(packageRoot, "pyproject.toml"), "utf8");
   const match = pyproject.match(/Pillow==([^"\]]+)/);
   if (!match) fail("pyproject.toml 未精确锁定 Pillow 版本。");
   return match[1];
 }
 
-function installedPillowVersion(packageRoot) {
+function installedPillowVersion(packageRoot: string): string | null {
   const python = join(packageRoot, ".venv/bin/python");
   if (!existsSync(python)) return null;
   const result = spawnSync(
@@ -93,7 +106,7 @@ function installedPillowVersion(packageRoot) {
   return result.status === 0 ? result.stdout.trim() : null;
 }
 
-function ensurePythonRuntime(config) {
+function ensurePythonRuntime(config: PackageConfig): void {
   if (!config.pythonDependency) return;
   const expected = expectedPillowVersion(config.root);
   if (installedPillowVersion(config.root) === expected) return;
@@ -103,7 +116,7 @@ function ensurePythonRuntime(config) {
   }
 }
 
-const requested = process.argv.slice(2);
+const requested = process.argv.slice(2).filter((arg) => arg !== "--");
 const targets = requested.length ? requested : Object.keys(packages);
 
 for (const name of targets) {
