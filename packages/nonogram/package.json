@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --import tsx --test skills/solving-nonogram/references/__tests__/*.tests.ts skills/rendering-nonogram/references/__tests__/*.tests.ts",
+    "test": "node --import tsx --test skills/resolve-nonogram/references/__tests__/*.tests.ts skills/rendering-nonogram/references/__tests__/*.tests.ts",
     "type-check": "tsc --noEmit -p ../../tsconfig.json"
   },
   "devDependencies": {

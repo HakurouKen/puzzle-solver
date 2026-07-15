@@ -1,13 +1,13 @@
 ---
-name: solving-nonogram
-description: Use when a black-and-white Nonogram's rowClues and columnClues have been decoded, rendered, and confirmed by the user and now need a complete, explainable solution with uniqueness detection.
+name: resolve-nonogram
+description: 当用户明确要求只解析一份已确认的数织 {rowClues, columnClues} JSON 为结构化状态时使用；输出结构化状态，不负责解码、确认或渲染。
 ---
 
-# Solving Nonogram（求解数织）
+# Resolve Nonogram（解析数织结果）
 
-入口是一份已经过 `decoding-nonogram → rendering-nonogram` 且由用户确认的 `{rowClues, columnClues}`。本 skill 负责校验、求解、输出结构化步骤，并调用项目级 `rendering-nonogram` 展示结果。
+入口是一份调用方保证已确认的 `{rowClues, columnClues}`。本 skill 负责校验、求解并输出结构化状态；展示由 `solve-nonogram` 或调用方负责。
 
-## 求解
+## 解析
 
 先解析真实绝对路径，再运行：
 
@@ -52,17 +52,17 @@ pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/solve-bo
 - `steps` 聚合记录 `line-deduction`、`assumption`、`contradiction`、`backtrack`。
 - `stats.limitReached` 只表示搜索节点上限；日志被截断由 `omittedSteps` 表示，不改变求解状态。
 
-## 状态处理
+## 状态语义
 
-- `solved`：唯一解，调用 rendering 展示。
-- `multiple`：把两组解都交给 rendering；必须显示差异格。
-- `indeterminate`：可以展示候选或 partial，但必须明确“唯一性未证明”。
-- `unsatisfiable`：展示原始 clues 和矛盾状态，提醒用户复查相关线索；不要自动改 clue 或自动重识。只有用户同意后才回 decoding。
+- `solved`：唯一解。
+- `multiple`：至少两组解，`alternateSolution` 是第二组见证解。
+- `indeterminate`：唯一性未证明，可包含候选或 partial。
+- `unsatisfiable`：线索矛盾；不要自动改 clue 或自动重识。
 
 ## 红旗
 
 - 对未经用户确认的 clues 求解。
 - 找到第一组解就宣称唯一。
 - 搜索过程伪装成纯逻辑推导。
-- 直接导入兄弟 rendering 的实现；跨 skill 必须调用 skill。
+- 产出结果后继续渲染。
 - solver 报无解后自行修正 clues。

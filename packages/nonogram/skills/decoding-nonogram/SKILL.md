@@ -1,25 +1,23 @@
 ---
 name: decoding-nonogram
-description: Use when a user provides an image, screenshot, scan, photo, or visual depiction of a black-and-white Nonogram and its row and column clues need to be decoded by the model, rendered, and confirmed before solving.
+description: 当用户明确只要求从数织图片中解码、读取或提取行列线索时使用；只输出 {rowClues, columnClues}，不负责确认、求解或渲染最终答案。
 ---
 
 # Decoding Nonogram（解码数织）
 
-把用户提供的黑白 Nonogram 视觉输入识别为 `{rowClues, columnClues}`，调用项目级 `rendering-nonogram` 生成规范化确认视图；只有用户明确确认后，才交给 `solving-nonogram`。本 skill 不求解。
+把用户提供的黑白 Nonogram 视觉输入识别为 `{rowClues, columnClues}`。确认、求解和最终展示由 `solve-nonogram` 编排；本 skill 只负责解码。
 
 ## 强制工作流
 
 1. 没有图片或其他可读视觉输入时，向用户索要并等待；不要造测试题。
 2. 一次只处理一道题。多张附件可以共同描述同一道题；一张图有多题时，先让用户指定目标。
-3. **完全使用模型视觉能力识别**棋盘尺寸、逐行 clues、逐列 clues。不要运行 OCR、OpenCV、网格切割或专用 clue 提取脚本。
+3. 完全使用模型视觉能力识别棋盘尺寸、逐行 clues、逐列 clues。不要运行 OCR、OpenCV、网格切割或专用 clue 提取脚本。
 4. 截图中已有的涂黑、叉号或其他作答痕迹不是题目条件，全部忽略；线索是唯一权威输入。
 5. 生成并校验 `{rowClues, columnClues}`。
-6. 输出尺寸以及带 1-based 编号的完整行、列 clue 清单，并调用 `rendering-nonogram` 显示空白题面。
-7. 主动询问用户识别是否正确，等待明确确认或纠正。确认前禁止调用 solving。
-8. 用户给出明确值时定点修正、重新校验并重新渲染；只说“这里不对”时才重点重新识图。禁止用可解性反推或猜测 clue。
-9. 确认后，把同一份数据交给项目级 `solving-nonogram`。
+6. 输出尺寸以及带 1-based 编号的完整行、列 clue 清单，便于调用方核对。
+7. 不调用 solver，不使用可解性反推或猜测 clue。
 
-## 输入数据契约
+## 输出契约
 
 ```json
 {
@@ -39,19 +37,14 @@ description: Use when a user provides an image, screenshot, scan, photo, or visu
 
 任何数字不清楚时，指出具体位置，例如“第 7 行第 2 个 clue 无法确认”，请用户补充或提供清晰图片。不要：
 
-- 根据常见题型补默认数字；
-- 根据对称性猜 clue；
-- 先求解再选择能得到解的读法；
+- 根据常见题型补默认数字。
+- 根据对称性猜 clue。
+- 先求解再选择能得到解的读法。
 - 把用户已有作答当作反推依据。
-
-## 确认用语
-
-渲染后询问：“识别为以上 `高×宽` 数织及行列线索，是否正确？如有错误，请指出具体行或列及正确 clue，例如‘第 8 行应为 `[2, 4]`’。”
 
 ## 红旗
 
 - 没有视觉输入却开始生成 clues。
 - 为不同图片样式调用识图脚本。
-- 未逐项展示 clues 或未等用户确认便开始求解。
-- 用户纠正一处后悄悄改动其他 clues。
+- 解码后继续求解。
 - 用 solver 修复识别结果。

@@ -1,11 +1,11 @@
 ---
 name: rendering-nonogram
-description: Use when a black-and-white Nonogram puzzle, partial board, unique solution, candidate, or pair of multiple solutions needs terminal or SVG rendering.
+description: 当用户明确要求渲染数织题面、局部状态、唯一解、候选解或多解 JSON 时使用；不负责解码、确认或求解。
 ---
 
 # Rendering Nonogram（渲染数织）
 
-职责单一：读取 `{rowClues, columnClues}` 及可选求解结果，生成 Unicode 终端文本或 SVG。不识图、不求解、不修改输入。
+职责单一：读取 `{rowClues, columnClues}` 及可选求解结果，生成 Unicode 终端文本或 SVG。不识图、不确认、不求解、不修改输入。
 
 ## 用法
 
@@ -29,7 +29,7 @@ pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-b
 | 确定白格 `0` | `× ` | 浅灰叉号 |
 | 未知格 `-1` | 两个空格 | 空白格 |
 
-- decoding 的题面没有 solution/partial，全部格子按未知显示。
+- 题面没有 solution/partial 时，全部格子按未知显示。
 - 每 5 行、5 列使用粗网格线，尾段正常收边。
 - 所有输出显示尺寸与完整 clues；终端额外输出 1-based 行列 clue 清单。
 - 根据 `status` 明确标记唯一解、无解、多解或未判定。
@@ -50,6 +50,12 @@ pnpm --dir <package-root> exec node --import tsx <skill-dir>/references/render-b
 ```
 
 求解输入还可包含 `status`、`solution`、`alternateSolution`、`partial`、`steps`、`stats`；renderer 忽略不参与呈现的字段。
+
+## 边界
+
+- 本 skill 不读传入数据之外的状态，不修改输入数据。
+- 本 skill 不识图、不确认、不求解。
+- 可由任意编排入口调用，但不依赖调用方是谁。
 
 ## 红旗
 
