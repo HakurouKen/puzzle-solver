@@ -1,13 +1,13 @@
 ---
 name: decoding-killer-sudoku
-description: Use when user provides a Killer Sudoku puzzle image and the puzzle's grid + cages need to be decoded from the image. Renders the decoded puzzle for user confirmation, then outputs JSON ready to hand off to solving-killer-sudoku.
+description: 当用户明确只要求从 Killer Sudoku 图片中解码、读取或提取 9×9 题面与 cage 定义时使用；只输出 {puzzle, cages}，不负责确认、求解或渲染最终答案。
 ---
 
 # Decoding Killer Sudoku（解码 Killer Sudoku）
 
-把用户给的 Killer Sudoku 谜题图片转成 `{puzzle, cages}` JSON，渲染给用户确认后交给项目级 `solving-killer-sudoku` skill 求解。求解本身不属于本 skill。
+把用户给的 Killer Sudoku 谜题图片转成 `{puzzle, cages}` JSON。确认、求解和最终展示由 `solve-killer-sudoku` 编排；本 skill 只负责解码。
 
-## 工作流（必须按顺序）
+## 工作流
 
 ```dot
 digraph flow {
@@ -18,10 +18,7 @@ digraph flow {
     "读 labels_grid.png 填 sum" [shape=box];
     "读 digits_grid.png 填 puzzle" [shape=box];
     "∑sum==405?" [shape=diamond];
-    "生成 {puzzle, cages} 数据" [shape=box];
-    "调用 rendering-killer-sudoku 显示" [shape=box];
-    "等待用户确认/纠正" [shape=diamond];
-    "调用 solving-killer-sudoku" [shape=box];
+    "生成 {puzzle, cages}" [shape=box];
     "用户消息" -> "有图片?";
     "有图片?" -> "跑 decode-image.py 得 candidate + 拼图" [label="是"];
     "有图片?" -> "向用户索要图片" [label="否"];
@@ -29,23 +26,19 @@ digraph flow {
     "跑 decode-image.py 得 candidate + 拼图" -> "读 labels_grid.png 填 sum"
         -> "读 digits_grid.png 填 puzzle" -> "∑sum==405?";
     "∑sum==405?" -> "读 labels_grid.png 填 sum" [label="否"];
-    "∑sum==405?" -> "生成 {puzzle, cages} 数据" [label="是"];
-    "生成 {puzzle, cages} 数据" -> "调用 rendering-killer-sudoku 显示"
-        -> "等待用户确认/纠正";
-    "等待用户确认/纠正" -> "调用 solving-killer-sudoku" [label="确认"];
-    "等待用户确认/纠正" -> "跑 decode-image.py 得 candidate + 拼图" [label="纠正"];
+    "∑sum==405?" -> "生成 {puzzle, cages}" [label="是"];
 }
 ```
 
-## 步骤详解
+## 步骤
 
 ### 1. 接收图片
 
-用户消息中如果**没有图片附件**，直接向用户索要图片并等待回复。不要假设、不要造测试盘。
+用户消息中如果没有图片附件，直接向用户索要图片并等待回复。不要假设、不要造测试盘。
 
 ### 2. 识图（快速通道，推荐）
 
-跑脚本，一次拿到 33 个 sum 拼图 + 9×9 数字拼图 + 笼分组骨架：
+跑脚本，一次拿到 sum 拼图、9×9 数字拼图和笼分组骨架：
 
 ```bash
 pnpm --dir <repo-root> run runtime:check -- killer-sudoku
@@ -55,110 +48,79 @@ pnpm --dir <repo-root> run runtime:check -- killer-sudoku
 `<repo-root>`、`<package-root>` 和 `<skill-dir>` 必须解析为真实绝对路径，不依赖当前工作目录。初始化脚本只使用项目内 `.venv`，不会调用系统 `pip`。
 
 产物（`/tmp/ks-decode/`）：
-- `candidate.json` — `{puzzle: 全 0, cages: [{cells, sum: null}, ...]}`，笼分组由 flood-fill 自动生成
-- `labels_grid.png` — **一次读全部 33 个 anchor 的 sum 数字**
-- `digits_grid.png` — **一次读全部 81 格的数字**（空格留空）
-- `debug/` — per-cell 原始切片，可在 sum/digit 有歧义时定点放大
 
-**agent 只需两步填数值**：
-1. 读 `labels_grid.png`，把每个 anchor 的 sum 填回 `candidate.json` 对应 cage
-2. 读 `digits_grid.png`，把已知数字填回 `candidate.json` 的 `puzzle`（空格保 0）
+- `candidate.json`：`{puzzle: 全 0, cages: [{cells, sum: null}, ...]}`，笼分组由 flood-fill 自动生成。
+- `labels_grid.png`：一次读全部 anchor 的 sum 数字。
+- `digits_grid.png`：一次读全部 81 格的数字（空格留空）。
+- `debug/`：per-cell 原始切片，可在 sum/digit 有歧义时定点放大。
 
-**自检**：
-- ∑cage.sum == **405**（数独总和 45×9）
-- 81 格恰被笼覆盖一次（脚本已验证）
+agent 只需两步填数值：
 
-自检不过 → 有 sum 读错，回 `labels_grid.png` 复查，或看 `debug/label_R_C.png` 定点放大。**不要脑补修正**。
+1. 读 `labels_grid.png`，把每个 anchor 的 sum 填回 `candidate.json` 对应 cage。
+2. 读 `digits_grid.png`，把已知数字填回 `candidate.json` 的 `puzzle`（空格保 0）。
+
+自检：
+
+- `∑cage.sum == 405`（数独总和 45×9）。
+- 81 格恰被笼覆盖一次（脚本已验证）。
+
+自检不过 → 有 sum 读错，回 `labels_grid.png` 复查，或看 `debug/label_R_C.png` 定点放大。不要脑补修正。
 
 脚本仅依赖项目 `uv.lock` 精确锁定的 Pillow。识图管线：暗行/暗列扫描定 grid → 内缩 dashed line 扫描定笼边界 → flood-fill 分组。
 
 ### 2b. 识图（慢通道，fallback）
 
 脚本失败或环境无 Python 时才用。用视觉能力直接读图：
-- 识别 9×9 网格的 81 格：每格是空白、已知数字（1-9），或无法识别
-- 识别笼（cage）：虚线边界围成的格组
-- 读取每个笼**锚点格左上角**的 sum 值（小号数字）
-- 逐行逐列读取（行优先：A1, A2, ..., A9, B1, ...）
 
-无法识别的格子用 `0` 标记为"空格"，**不要猜测**。
+- 识别 9×9 网格的 81 格：每格是空白、已知数字（1-9），或无法识别。
+- 识别笼（cage）：虚线边界围成的格组。
+- 读取每个笼锚点格左上角的 sum 值（小号数字）。
+- 逐行逐列读取（行优先：A1, A2, ..., A9, B1, ...）。
 
-**三种线型区分**（关键，容易混淆）：
+无法识别的格子用 `0` 标记为空格，不要猜测。
+
+三种线型区分：
 
 | 线型 | 粗细 | 语义 |
 |------|------|------|
-| **实线粗**（≈3px） | 粗 | 3×3 宫边界 + 外框 |
-| **实线细**（≈1px） | 细 | 单格网格（宫内相邻格） |
-| **虚线**（dashed） | 中 | **笼边界**（Killer 独有） |
+| 实线粗（≈3px） | 粗 | 3×3 宫边界 + 外框 |
+| 实线细（≈1px） | 细 | 单格网格（宫内相邻格） |
+| 虚线（dashed） | 中 | 笼边界 |
 
-只有**虚线**才是笼边界。粗实线是宫边界，与笼无关；笼可**跨宫**（虚线可穿过粗实线）。
+只有虚线才是笼边界。粗实线是宫边界，与笼无关；笼可跨宫。
 
-**其他视觉元素**：
+其他视觉元素：
 
-- 浅蓝底色（highlight）——**不是笼边界**，仅为示例/装饰。忽略。
-- 深蓝底色的加粗单元格——是**已知数字格**（filled digit），仍属于某个笼。
+- 浅蓝底色（highlight）不是笼边界，仅为示例/装饰，忽略。
+- 深蓝底色的加粗单元格是已知数字格，仍属于某个笼。
 
-**锚点约定**（与 rendering-killer-sudoku 一致）：
+锚点约定：sum 小数字必然位于笼锚点格的左上角。锚点 = 该笼中「行索引最小；行相同则列索引最小」的格。
 
-sum 小数字**必然**位于笼锚点格的左上角。锚点 = 该笼中「行索引最小；行相同则列索引最小」的格。反过来：看到 sum 就是锚点，从锚点向右/下追虚线扩笼。
-
-**总和自检**：所有 cage sum 之和 = 45 × 9 = **405**。识完后先加一遍，不等于 405 就是漏笼或错读 sum。
-
-**覆盖自检**：81 格必须被笼恰好覆盖一次（无遗漏、无重复）。
-
-### 3. 生成 JSON
+### 3. 输出解码数据
 
 ```json
 {
-  "puzzle": [[0, 0, ...], ...],
-  "cages": [
-    { "cells": [[0, 0], [0, 1]], "sum": 10 },
-    ...
-  ]
-}
-```
-
-- `puzzle`：9×9 `number[][]`，`0` = 空格，`1-9` = 已知数
-- `cages`：笼列表，`cells` 为 0-indexed `[row, col]` 数组，`sum` 为笼目标和
-
-### 4. 生成解码数据
-
-保留 `{ "puzzle": number[][], "cages": Cage[] }` 数据对象供后续 skill 使用。数据可通过内存、stdin 或调用方选择的文件传递；不要要求固定文件名或 `/tmp` 路径。
-
-### 5. 渲染并请求确认
-
-把 `{puzzle, cages}` 数据交给项目级 `rendering-killer-sudoku` skill。打印棋盘和笼列表后**主动询问用户**："识别如上盘面和笼定义，是否正确？如有错误请指出（例如'行 3 列 4 应为 5 而非 6'或'笼 2 的 sum 应为 15'）。"
-
-如果用户指出错误，**回到第 2 步**重识，不要自己脑补修正。
-
-### 6. 交棒给 solving-killer-sudoku
-
-用户确认后，把同一份已确认的 `{puzzle, cages}` 数据交给项目级 `solving-killer-sudoku` skill 求解，不要自己跑 `solve-board.ts`。
-
-## 输入格式约定
-
-```json
-{
-  "puzzle": [[0, 0, 0, 0, 0, 0, 0, 0, 0], ...],
+  "puzzle": [[0, 0, 0, 0, 0, 0, 0, 0, 0]],
   "cages": [
     { "cells": [[0, 0], [0, 1]], "sum": 3 }
   ]
 }
 ```
 
-- `puzzle`：9×9 二维数字数组（`number[][]`）
-- `cages`：笼数组，每个笼含 `cells`（`[row, col][]`）和 `sum`（`number`）
-- `cells` 中坐标 0-indexed
+- `puzzle`：9×9 `number[][]`，`0` = 空格，`1-9` = 已知数。
+- `cages`：笼列表，`cells` 为 0-indexed `[row, col]` 数组，`sum` 为笼目标和。
+- 数据可通过内存、stdin 或调用方选择的文件传递；不要要求固定文件名或 `/tmp` 路径。
 
 ## 验证清单
 
-- [ ] 网格是 9×9
-- [ ] 所有值 0-9
-- [ ] 81 格全部被笼覆盖，无重复
-- [ ] 每个笼有合法 sum 值（不小于笼内最小组合和）
-- [ ] 笼格坐标在网格范围内
-- [ ] **∑cage.sum == 405**（数独总和自检）
-- [ ] 每个笼的锚点 = cells 中字典序最小的 [row, col]
-- [ ] 笼边界只走虚线，未把粗实线（宫界）当笼界
+- [ ] 网格是 9×9。
+- [ ] 所有值 0-9。
+- [ ] 81 格全部被笼覆盖，无重复。
+- [ ] 每个笼有合法 sum 值（不小于笼内最小组合和）。
+- [ ] 笼格坐标在网格范围内。
+- [ ] `∑cage.sum == 405`。
+- [ ] 每个笼的锚点 = cells 中字典序最小的 `[row, col]`。
+- [ ] 笼边界只走虚线，未把粗实线（宫界）当笼界。
 
 ## 常见错误
 
@@ -171,15 +133,13 @@ sum 小数字**必然**位于笼锚点格的左上角。锚点 = 该笼中「行
 | 把粗实线（宫界）当笼界 | 只有虚线才是笼界；笼可跨宫。 |
 | 把浅蓝底色格当笼分组 | 底色只是装饰；只看虚线。 |
 | ∑sum ≠ 405 | 漏笼或错读 sum，回第 2 步。 |
-| sum 定位在非锚点格 | sum 只出现在锚点（字典序最小格）左上角。 |
-| 渲染看着差不多就调用 solving | **必须**等用户回话确认。 |
-| 用户指错就自己脑补改 JSON | **不可**，回第 2 步重识。 |
-| 自己跑 solve-board.ts | 求解归 solving-killer-sudoku，调用该 skill。 |
+| sum 定位在非锚点格 | sum 只出现在锚点左上角。 |
+| 解码后继续求解 | 停。本 skill 只输出 `{puzzle, cages}`；完整链路归 `solve-killer-sudoku`。 |
+| 用 solver 反推识别结果 | 不可。解码只看图片。 |
 
-## 红旗 — 立即停止
+## 红旗
 
-- "图片肯定是 Killer Sudoku 标准盘" → 不要假设，实际看图
-- "用户没给图我就用一个示例盘" → 索要图片，不要替代
-- "这个格的数字看不太清就猜 5 吧" → 不可，标 0
-- "render 出来差不多直接调用 solving" → **必须**等用户确认
-- 笼覆盖验证不通过 → 重新识图，不要强行修补
+- “图片肯定是 Killer Sudoku 标准盘” → 不要假设，实际看图。
+- “用户没给图我就用一个示例盘” → 索要图片，不要替代。
+- “这个格的数字看不太清就猜 5 吧” → 不可，标 0。
+- 笼覆盖验证不通过 → 重新识图，不要强行修补。

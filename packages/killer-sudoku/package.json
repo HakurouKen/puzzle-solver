@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node --import tsx --test skills/solving-killer-sudoku/references/__tests__/*.tests.ts skills/rendering-killer-sudoku/references/__tests__/*.tests.ts",
+    "test": "node --import tsx --test skills/resolve-killer-sudoku/references/__tests__/*.tests.ts skills/rendering-killer-sudoku/references/__tests__/*.tests.ts",
     "type-check": "tsc --noEmit -p ../../tsconfig.json"
   },
   "devDependencies": {
