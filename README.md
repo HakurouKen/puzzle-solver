@@ -13,11 +13,14 @@
 | [`killer-sudoku`](./packages/killer-sudoku)  | 杀手数独：识别网格 + cage，渲染 cage 边界与 SVG，约束传播 + 分步求解 |
 | [`nonogram`](./packages/nonogram)            | 数织：模型识别任意矩形黑白线索，终端/SVG 渲染，DP 传播并判定唯一性   |
 
-每个 package 提供三个 skills：
+每个 package 提供四个 skills：
 
-- `decoding-*` — 从图片解码，先渲染出确认视图，用户 OK 后再产出结构化 JSON
-- `rendering-*` — 独立渲染 skill，供解码/求解链路调用
-- `solving-*` — 拿已确认的结构化输入求解，输出 solution + 推理步骤，末尾调用渲染
+- `solve-*` — 自然语言“解题”入口，显式编排 `decoding → rendering 确认 → resolve → rendering 结果`
+- `decoding-*` — 仅从图片解码，输出结构化 JSON，不负责确认或求解
+- `rendering-*` — 仅渲染结构化 JSON，不识图、不求解、不修改输入
+- `resolve-*` — 仅拿已确认的结构化输入产出结构化结果，输出 solution/status + 推理步骤，不负责渲染
+
+旧的 `solving-*` 入口已更名为 `resolve-*`；不要新增 `solving-*` symlink，避免和 `solve-*` 混淆。
 
 ## 用法
 
@@ -25,7 +28,7 @@
 
 用 Codex 或 Claude Code 打开本仓库：
 
-- Codex 从 [`.agents/skills`](./.agents/skills) 发现 12 个项目级 skills。
+- Codex 从 [`.agents/skills`](./.agents/skills) 发现 16 个项目级 skills。
 - Claude Code 通过 [`.claude/skills`](./.claude/skills) 读取同一组 skills。
 - 两个入口都是指向 `packages/*/skills/*` 的仓库内相对符号链接，仅支持 macOS/Linux。
 
@@ -35,10 +38,12 @@
 
 ```
 用户: 帮我解这道数独 [附图]
-  → decoding-sudoku 识别 → 渲染确认
+  → solve-sudoku 编排 decoding-sudoku 识别 → rendering-sudoku 渲染确认
   → 用户确认无误
-  → solving-sudoku 求解 → rendering-sudoku 展示解
+  → resolve-sudoku 产出结构化结果 → rendering-sudoku 展示解
 ```
+
+自然语言“帮我解这题”优先触发 `solve-*`。只有用户明确要求单阶段操作时，才使用 `decoding-*`、`resolve-*` 或 `rendering-*`。
 
 ## 开发
 

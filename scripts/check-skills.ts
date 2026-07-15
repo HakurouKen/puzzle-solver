@@ -6,18 +6,22 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const skills = [
+  ["solve-star-battle", "packages/star-battle/skills/solve-star-battle"],
   ["decoding-star-battle", "packages/star-battle/skills/decoding-star-battle"],
   ["rendering-star-battle", "packages/star-battle/skills/rendering-star-battle"],
-  ["solving-star-battle", "packages/star-battle/skills/solving-star-battle"],
+  ["resolve-star-battle", "packages/star-battle/skills/resolve-star-battle"],
+  ["solve-sudoku", "packages/sudoku/skills/solve-sudoku"],
   ["decoding-sudoku", "packages/sudoku/skills/decoding-sudoku"],
   ["rendering-sudoku", "packages/sudoku/skills/rendering-sudoku"],
-  ["solving-sudoku", "packages/sudoku/skills/solving-sudoku"],
+  ["resolve-sudoku", "packages/sudoku/skills/resolve-sudoku"],
+  ["solve-killer-sudoku", "packages/killer-sudoku/skills/solve-killer-sudoku"],
   ["decoding-killer-sudoku", "packages/killer-sudoku/skills/decoding-killer-sudoku"],
   ["rendering-killer-sudoku", "packages/killer-sudoku/skills/rendering-killer-sudoku"],
-  ["solving-killer-sudoku", "packages/killer-sudoku/skills/solving-killer-sudoku"],
+  ["resolve-killer-sudoku", "packages/killer-sudoku/skills/resolve-killer-sudoku"],
+  ["solve-nonogram", "packages/nonogram/skills/solve-nonogram"],
   ["decoding-nonogram", "packages/nonogram/skills/decoding-nonogram"],
   ["rendering-nonogram", "packages/nonogram/skills/rendering-nonogram"],
-  ["solving-nonogram", "packages/nonogram/skills/solving-nonogram"],
+  ["resolve-nonogram", "packages/nonogram/skills/resolve-nonogram"],
 ] as const;
 
 function assert(condition: unknown, message: string): asserts condition {
