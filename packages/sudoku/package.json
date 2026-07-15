@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --import tsx --test skills/solving-sudoku/references/__tests__/*.tests.ts skills/rendering-sudoku/references/__tests__/*.tests.ts",
+    "test": "node --import tsx --test skills/resolve-sudoku/references/__tests__/*.tests.ts skills/rendering-sudoku/references/__tests__/*.tests.ts",
     "type-check": "tsc --noEmit -p ../../tsconfig.json"
   },
   "devDependencies": {
