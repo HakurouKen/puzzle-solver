@@ -1,6 +1,6 @@
 # Star Battle 策略说明
 
-## 1. 问题定义
+## 问题定义
 
 Star Battle 要在 `n × n` 棋盘上放置星星。每一行、每一列、每一个粗线围成的区域都必须恰好有 `k` 颗星；任意两颗星不能相邻，包括上下左右和斜角相邻。常见题型是每组 1 星或 2 星，当前 Solver 同时提供 `k=1`、`k=2` 特化入口和任意 `k` 的通用骨架。
 
@@ -18,9 +18,9 @@ flowchart LR
   H --> B
 ```
 
-## 2. 策略详解
+## 策略详解
 
-### 2.1 邻接排除与饱和清除（No-Touch Elimination and Saturation）
+### 邻接排除与饱和清除（No-Touch Elimination and Saturation）
 
 Solver 对应函数为 `saturationClear`，候选有效性同时由 `deriveCandidates` 检查。
 
@@ -34,7 +34,7 @@ Solver 对应函数为 `saturationClear`，候选有效性同时由 `deriveCandi
 
 “饱和”指某个容器的星数配额已经用完。反过来，如果容器已出现超过 `k` 颗星，或两颗星互相相邻，当前假设已经矛盾。清除不是猜测星位，而是把规则的直接后果完整写到盘面上。
 
-### 2.2 剩余候选等于剩余配额（Candidate Count Equals Remaining Quota）
+### 剩余候选等于剩余配额（Candidate Count Equals Remaining Quota）
 
 Solver 对应函数为 `uniqueRegion`、`uniqueRow` 与 `uniqueCol`。
 
@@ -44,7 +44,7 @@ Solver 对应函数为 `uniqueRegion`、`uniqueRow` 与 `uniqueCol`。
 
 候选数不足剩余配额则表示矛盾。人工解题时应同时检查行、列、区域三套容器，不能只盯区域边界。
 
-### 2.3 共同邻格排除（Common-Neighbor Elimination）
+### 共同邻格排除（Common-Neighbor Elimination）
 
 如果已知某一小组候选中必有一颗星，那么任何与这组所有候选都相邻的外部格都不可能放星。最常见的是两个水平或垂直相邻候选承载一颗星：无论星落在哪个候选，它们共同一侧的格都会挨着星，因此可以划掉。
 
@@ -55,19 +55,19 @@ Solver 对应函数为 `uniqueRegion`、`uniqueRow` 与 `uniqueCol`。
 
 证明的关键是“这组候选必含星”，而不只是“看起来可能放星”。这一结论可以来自行列配额、区域拆分或组合计数。候选组扩大后，共同邻域通常缩小，但原理不变。
 
-### 2.4 四方格规则（Four-Square Rule）
+### 四方格规则（Four-Square Rule）
 
 任何 `2 × 2` 方块至多容纳一颗星，因为方块内任意两格都彼此相邻。如果一个 2 星区域的候选可以分成两个互不重叠的 `2 × 2` 子集，那么每个子集至多一星，而全区需要两星，所以两边都恰好各含一星。
 
 四方格只是容量上限，不代表每个 `2 × 2` 都必须有星。只有当行列、区域或更大分组的剩余配额逼迫它达到上限时，才能继续排除。图解例子见 [Krazydad 的入门教程](https://krazydad.com/twonottouch/intro_tutorial/)。
 
-### 2.5 边角容量（Edge and Corner Capacity）
+### 边角容量（Edge and Corner Capacity）
 
 边角并没有额外规则，但棋盘边界减少了候选向外延伸的空间，使不相邻约束更容易达到容量上限。若一个贴边子块必须容纳一星，所有同时邻接该子块全部候选的内侧格都可排除；角落子块的共同邻域通常比棋盘中央更大。
 
 边角模板只能作为容量计算的快捷视角。区域形状、现有 `×` 或行列配额稍有变化，结论就可能不同；落子前仍应写清子块至少或至多需要几颗星。
 
-### 2.6 连续候选格（Candidate Runs）
+### 连续候选格（Candidate Runs）
 
 在同一行的三个连续候选中若必须放两颗星，唯一合法放法是两端放星、中间划掉：
 
@@ -78,7 +78,7 @@ Solver 对应函数为 `uniqueRegion`、`uniqueRow` 与 `uniqueCol`。
 
 更长的窄条可以用同样的容量思想分析：长度 `L` 的连续单行候选至多容纳 `ceil(L/2)` 颗互不相邻的星。一旦“最多能放数”恰好等于“必须放数”，所有合法位置会呈交替结构；但若中间有缺口或候选分属不同配额，必须重新计算，不能套固定模板。
 
-### 2.7 区域锁定行列（Region-to-Line Lock）
+### 区域锁定行列（Region-to-Line Lock）
 
 Solver 对应函数为 `rowColRegionLock`。
 
@@ -90,7 +90,7 @@ Solver 对应函数为 `rowColRegionLock`。
 
 反向推理也很常用：若一行剩余星只能来自某个区域与该行的交集，那么该区域在线外的候选可被排除。这种方向在 `k=1` 下尤其直接，在更大的 `k` 下要精确比较双方剩余配额。
 
-### 2.8 区域拆分与局部容量（Region Splitting and Local Capacity）
+### 区域拆分与局部容量（Region Splitting and Local Capacity）
 
 复杂区域可以按几何容量拆成若干子块。假设一个 2 星区域的所有候选可分成两个子块，而每个子块都落在某个 `2 × 2` 范围内，因此各自至多放 1 星；整个区域必须放 2 星，于是两个子块都恰好各放 1 星。
 
@@ -100,7 +100,7 @@ Solver 对应函数为 `rowColRegionLock`。
 
 更复杂的拆分实例见 [Krazydad 的中级教程](https://krazydad.com/twonottouch/med_tutorial/)。
 
-### 2.9 广义对与容器组计数（Generalized Pairs and Set Counting）
+### 广义对与容器组计数（Generalized Pairs and Set Counting）
 
 Solver 对应函数为 `generalizedPair`。
 
@@ -110,7 +110,7 @@ Solver 对应函数为 `generalizedPair`。
 
 这是一种集合版的“候选数等于配额”。区域数和行数相等只是表面形式，真正依据是两边需要与容量相等。已经放过星的区域若仍按完整配额计入，会破坏等式，因此当前 Solver 只组合尚无星的区域。
 
-### 2.10 小区域形状枚举（Small-Region Shape Enumeration）
+### 小区域形状枚举（Small-Region Shape Enumeration）
 
 Solver 在 `k=2` 入口中由 `regionShapeEnum` 实现；它由 `makeRegionShapeEnum` 构造，并调用 `enumeratePlacements`。
 
@@ -129,7 +129,7 @@ Solver 在 `k=2` 入口中由 `regionShapeEnum` 实现；它由 `makeRegionShape
 
 当前 `k=2` Solver 只对至多 6 个候选的区域做这类枚举，以控制组合数量。它只检查区域内部星之间的不相邻性；全盘已有星、行列配额和排除格先由候选推导处理。
 
-### 2.11 隐藏行列组（Hidden Line Groups）
+### 隐藏行列组（Hidden Line Groups）
 
 Solver 在 `k=1` 入口中由 `hiddenRowGroup` 与 `hiddenColGroup` 实现，它们由 `makeHiddenLineGroup` 构造。
 
@@ -139,7 +139,7 @@ Solver 在 `k=1` 入口中由 `hiddenRowGroup` 与 `hiddenColGroup` 实现，它
 
 当前实现只在 `k=1` 使用该策略。`k≥2` 时，`m` 行共有 `m×k` 颗星，可能由多于 `m` 个区域共同贡献，简单的一一计数不再天然成立；若要推广，必须重新建立容量等式，不能照搬函数条件。
 
-### 2.12 星墙、空墙与带状计数（Star/Empty Walls and Bands）
+### 星墙、空墙与带状计数（Star/Empty Walls and Bands）
 
 “墙”不是统一标准术语，通常指一串已经锁定星配额或已经排空的格，把盘面切成更易计数的两侧。比如连续两行的星全部被几个局部候选组占用，那么这两行对其他区域相当于空墙；跨过它们的区域只能把剩余星放在线外。
 
@@ -147,7 +147,7 @@ Solver 在 `k=1` 入口中由 `hiddenRowGroup` 与 `hiddenColGroup` 实现，它
 
 使用这种视觉语言时，最好在旁边写出计数，例如“3 行需要 6 星，A/B/C 三个区域已在其中锁定 6 星”，避免把形似屏障的图案误当作逻辑条件。
 
-### 2.13 强制链与短矛盾试探（Forced Chains）
+### 强制链与短矛盾试探（Forced Chains）
 
 Solver 对应函数为 `forcedChain`，由 `makeForcedChain` 按 `k=1` 或 `k=2` 的共存规则构造。
 
@@ -157,7 +157,7 @@ Solver 对应函数为 `forcedChain`，由 `makeForcedChain` 按 `k=1` 或 `k=2`
 
 人类的短矛盾试探也应保留清晰分支。假设后只使用确定规则；一旦找到“某行候选不足”“某区域无法放够星”或“出现相邻星”，就回到原局面，把最初候选排除。
 
-### 2.14 长链与染色（Long Chains and Coloring）
+### 长链与染色（Long Chains and Coloring）
 
 把候选看成图：同一容器中争夺有限配额的候选之间有互斥关系，某个候选组必须含星则提供“至少一个成立”的关系。不停交替这些关系，可以形成比一层强制链更长的推理。
 
@@ -165,13 +165,13 @@ Solver 对应函数为 `forcedChain`，由 `makeForcedChain` 按 `k=1` 或 `k=2`
 
 Star Battle 的链不像标准 Sudoku 那样有高度统一的命名和候选记法。记录时应给每条边写出依据，例如“这两个格二选一”“这个 2×2 至多一星”“这两行还缺两星”，而不要只凭颜色传播。
 
-### 2.15 对称性观察（Symmetry as a Heuristic）
+### 对称性观察（Symmetry as a Heuristic）
 
 有些题目的区域布局呈旋转或镜像对称，构造者也可能让答案保持某种美感。对称性可以提示先检查对应区域，或帮助发现漏标的同构结构，但普通规则并不保证星位对称。
 
 除非题目明确把对称性写成附加规则，否则不能因为左上角有星就直接在右下角放星。每个落子仍需由邻接、行列区域配额、容量计数或矛盾证明。
 
-### 2.16 最小候选区域搜索（Minimum-Candidate Region Search）
+### 最小候选区域搜索（Minimum-Candidate Region Search）
 
 Solver 对应函数为 `search`，每个搜索节点先调用 `deduce` 反复应用已配置策略。
 
@@ -179,11 +179,11 @@ Solver 对应函数为 `search`，每个搜索节点先调用 `deduce` 反复应
 
 最小候选优先能让错误假设更快暴露，但搜索找到一组星位不等于给出一条简短的人类解路，也不自动证明唯一性。当前 Star Battle Solver 返回找到的第一组解；若要验证题目唯一，必须继续探索其他分支或使用专门的多解检测。
 
-## 3. 延伸变体
+## 延伸变体
 
 不同教程常用自定义名称描述相近的容量推理，常见名称包括：Four-Square Rule、Locked Candidates、Confined Regions、Clumps、Squeeze、Virtual Bands、Region/Line Fish、Constraint Pairs、Lookahead、Common-Neighborhood Elimination。遇到冷门名称时，应把它还原为“不相邻上限 + 行列区域配额 + 候选集合”再判断是否成立；更多分组实例可参考 [Krazydad 的高级教程](https://krazydad.com/twonottouch/adv_tutorial/)。
 
-## 4. 参考资料
+## 参考资料
 
 - [Krazydad：Two Not Touch 入门教程](https://krazydad.com/twonottouch/intro_tutorial/)——邻接清除、四方格、候选组共同邻格与区域—行列交互。
 - [Krazydad：Two Not Touch 中级教程](https://krazydad.com/twonottouch/med_tutorial/)——区域拆分、局部容量和外部排除。
